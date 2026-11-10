@@ -48,7 +48,10 @@ public final class MainActivity extends Activity {
     private static final int ZONE_TOP = 0;
     private static final int ZONE_DOCK = 1;
     private static final int ZONE_GRID = 2;
+    private static final int ZONE_HERO = 3;
     private static final int COLUMNS = 4;
+    /** Featured titles change by themselves after this long without a key press. */
+    private static final long AUTO_ADVANCE_MS = 9000;
     private static final int PILL_INPUTS = 0;
     private static final int PILL_WIFI = 1;
 
@@ -70,14 +73,39 @@ public final class MainActivity extends Activity {
     private RecyclerView grid;
     private TileAdapter adapter;
     private ImageView wallpaper;
-    private TextView shelfCaption;
-    private LinearLayout shelf;
-    private String shelfPackage;
-    private List<Recommendations.Item> shelfItems = new ArrayList<>();
-    private final Recommendations.Listener shelfListener = () -> updateShelf(true);
     private View scrim;
+    private View clockGroup;
+    private FrameLayout heroSlot;
+    private HeroView hero;
+    private FeaturedStore featured;
+    private StyleMenu styleMenu;
     private InputsMenu inputsMenu;
     private NetworkStatus networkStatus;
+    private boolean resumed;
+    private final Runnable autoAdvance = this::autoAdvance;
+
+    private final StyleMenu.Host styleHost = new StyleMenu.Host() {
+        @Override
+        public String committedStyle() {
+            return Prefs.style(MainActivity.this);
+        }
+
+        @Override
+        public void previewStyle(String style) {
+            applyStyle(style);
+        }
+
+        @Override
+        public void commitStyle(String style) {
+            Prefs.setStyle(MainActivity.this, style);
+            applyStyle(style);
+        }
+
+        @Override
+        public boolean hasFeatured() {
+            return !featured.items().isEmpty();
+        }
+    };
 
     private int zone = ZONE_DOCK;
     private int topIndex;
@@ -98,6 +126,7 @@ public final class MainActivity extends Activity {
             if (ACTION_REFRESH.equals(action)) {
                 loadWallpaper();
                 reloadApps();
+                featured.reload(() -> applyStyle(Prefs.style(MainActivity.this)));
             } else {
                 updateGreeting();
             }
@@ -124,10 +153,11 @@ public final class MainActivity extends Activity {
         grid = findViewById(R.id.grid);
         wallpaper = findViewById(R.id.wallpaper);
         scrim = findViewById(R.id.scrim);
-        shelfCaption = findViewById(R.id.shelf_caption);
-        shelf = findViewById(R.id.shelf);
-        Recommendations.addListener(shelfListener);
-        pills = new TextView[]{findViewById(R.id.pill_inputs), findViewById(R.id.pill_wifi), findViewById(R.id.pill_settings)};
+        clockGroup = findViewById(R.id.clock_group);
+        heroSlot = findViewById(R.id.hero);
+        featured = new FeaturedStore(this);
+        styleMenu = new StyleMenu(this, styleHost);
+        pills =new TextView[]{findViewById(R.id.pill_inputs), findViewById(R.id.pill_wifi), findViewById(R.id.pill_settings)};
         appsOffset = getResources().getDimensionPixelSize(R.dimen.apps_offset);
         rowHeight = getResources().getDimensionPixelSize(R.dimen.tile_slot_height);
         applyTypefaces();
@@ -160,19 +190,28 @@ public final class MainActivity extends Activity {
         updateGreeting();
         loadWallpaper();
         reloadApps();
+        featured.reload(() -> applyStyle(Prefs.style(this)));
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        resumed = true;
         updateGreeting();
         networkStatus.refresh();
+        if (hero != null) hero.start();
+        scheduleAutoAdvance();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        resumed = false;
         inputsMenu.dismiss();
+        styleMenu.dismiss(true);
+        // No motion while an app is in front: the hero animations stop completely.
+        if (hero != null) hero.stop();
+        main.removeCallbacks(autoAdvance);
         Prefs.saveFocus(this, zone, topIndex, dockIndex, gridIndex);
     }
 
@@ -180,6 +219,7 @@ public final class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         inputsMenu.dismiss();
+        styleMenu.dismiss(true);
         if (intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false)) {
             // Home pressed while Glass Home was already in front: return to the dock.
             if (!dockApps.isEmpty()) zone = ZONE_DOCK;
@@ -216,7 +256,8 @@ public final class MainActivity extends Activity {
             unregisterReceiver(packageReceiver);
         }
         networkStatus.stop();
-        Recommendations.removeListener(shelfListener);
+        if (hero != null) hero.stop();
+        featured.shutdown();
         loader.shutdownNow();
         super.onDestroy();
     }
@@ -228,13 +269,20 @@ public final class MainActivity extends Activity {
                     + (event.getAction() == KeyEvent.ACTION_DOWN ? " down" : " up")
                     + " zone=" + zone + " menu=" + inputsMenu.isShowing());
         }
-        // While the Inputs menu is open it receives the remote's keys from here (it never
-        // takes window focus itself), so no press is lost while the popup is appearing.
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        if (down) scheduleAutoAdvance(); // never change title while someone is using the remote
+        // While a menu is open it receives the remote's keys from here (it never takes window
+        // focus itself), so no press is lost while the popup is appearing.
+        if (styleMenu.isShowing() && styleMenu.handleKey(event)) {
+            return true;
+        }
         if (inputsMenu.isShowing() && inputsMenu.handleKey(event)) {
             return true;
         }
-        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         switch (event.getKeyCode()) {
+            case KeyEvent.KEYCODE_MENU:
+                if (down && event.getRepeatCount() == 0) styleMenu.show(page);
+                return true;
             case KeyEvent.KEYCODE_DPAD_UP:
                 if (down) move(0, -1);
                 return true;
@@ -269,6 +317,17 @@ public final class MainActivity extends Activity {
             case ZONE_TOP:
                 if (dx != 0) {
                     topIndex = clamp(topIndex + dx, 0, pills.length - 1);
+                } else if (dy > 0 && heroActive()) {
+                    zone = ZONE_HERO;
+                } else if (dy > 0 && !dockApps.isEmpty()) {
+                    zone = ZONE_DOCK;
+                }
+                break;
+            case ZONE_HERO:
+                if (dx != 0) {
+                    hero.step(dx);
+                } else if (dy < 0) {
+                    zone = ZONE_TOP;
                 } else if (dy > 0 && !dockApps.isEmpty()) {
                     zone = ZONE_DOCK;
                 }
@@ -277,7 +336,7 @@ public final class MainActivity extends Activity {
                 if (dx != 0) {
                     dockIndex = clamp(dockIndex + dx, 0, dockApps.size() - 1);
                 } else if (dy < 0) {
-                    zone = ZONE_TOP;
+                    zone = heroActive() ? ZONE_HERO : ZONE_TOP;
                 } else if (dy > 0 && !gridApps.isEmpty()) {
                     zone = ZONE_GRID;
                     gridIndex = Math.min(dockIndex, gridApps.size() - 1);
@@ -322,15 +381,21 @@ public final class MainActivity extends Activity {
             TileViews.setSelected(dockTiles.get(i), zone == ZONE_DOCK && i == dockIndex, animate);
         }
         adapter.setSelected(zone == ZONE_GRID ? gridIndex : -1, grid);
+        boolean heroOn = heroActive();
         if (!dockApps.isEmpty()) {
             AppEntry app = dockApps.get(dockIndex);
             title.setText(app.label);
-            glow.setColor(app.accent, animate);
+            if (!heroOn) glow.setColor(app.accent, animate);
         } else {
             title.setText("");
         }
+        if (heroOn && hero.current() != null) {
+            glow.setColor(hero.current().accent, animate);
+        }
+        // Featured styles show the title's name instead of the large app name.
+        title.setVisibility(heroOn ? View.GONE : View.VISIBLE);
         title.animate().alpha(zone == ZONE_DOCK ? 1f : 0.45f).setDuration(220).start();
-        updateShelf(animate);
+        if (hero != null) hero.setFocused(zone == ZONE_HERO);
         if (zone == ZONE_GRID) {
             scrollGridToSelection(animate);
         }
@@ -371,6 +436,10 @@ public final class MainActivity extends Activity {
     private void placeHighlight(boolean animate, int attempt) {
         View target;
         boolean pill = false;
+        if (zone == ZONE_HERO) {
+            highlight.hide(); // the featured title shows its own focus
+            return;
+        }
         if (zone == ZONE_TOP) {
             target = pills[topIndex];
             pill = true;
@@ -409,6 +478,10 @@ public final class MainActivity extends Activity {
     }
 
     private void activate() {
+        if (zone == ZONE_HERO) {
+            launchFeatured(hero.current());
+            return;
+        }
         if (zone == ZONE_TOP) {
             if (topIndex == PILL_INPUTS) {
                 inputsMenu.show(pills[PILL_INPUTS]);
@@ -425,6 +498,66 @@ public final class MainActivity extends Activity {
             AppEntry app = list.get(index);
             launch(app.launchIntent, app.label);
         }
+    }
+
+    /** Opens the app that streams the featured title. */
+    private void launchFeatured(FeaturedItem item) {
+        if (item == null) return;
+        if (item.packageName != null) {
+            for (List<AppEntry> list : java.util.Arrays.asList(dockApps, gridApps)) {
+                for (AppEntry entry : list) {
+                    if (item.packageName.equals(entry.packageName)) {
+                        launch(entry.launchIntent, entry.label);
+                        return;
+                    }
+                }
+            }
+        }
+        Toast.makeText(this, getString(R.string.cannot_open, item.provider != null ? item.provider : item.title),
+                Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean heroActive() {
+        return hero != null && !hero.isEmpty();
+    }
+
+    /** Shows a home style (also used for the live preview in the style picker). */
+    private void applyStyle(String requested) {
+        String style = HomeStyle.normalize(requested);
+        String keepId = hero != null && hero.current() != null ? hero.current().id : null;
+        if (hero != null) {
+            hero.stop();
+            heroSlot.removeAllViews();
+        }
+        hero = HomeStyle.create(this, style);
+        if (hero != null) {
+            hero.setListener(item -> {
+                if (item != null) glow.setColor(item.accent, true);
+            });
+            hero.setGreeting(greeting.getText());
+            heroSlot.addView(hero, new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            hero.bind(featured, featured.items(), keepId);
+            if (resumed) hero.start();
+        }
+        boolean heroOn = heroActive();
+        clockGroup.setVisibility(heroOn && hero.replacesClock() ? View.INVISIBLE : View.VISIBLE);
+        if (zone == ZONE_HERO && !heroOn) zone = ZONE_DOCK;
+        applyFocus(true);
+        scheduleAutoAdvance();
+    }
+
+    private void scheduleAutoAdvance() {
+        main.removeCallbacks(autoAdvance);
+        if (resumed && heroActive()) main.postDelayed(autoAdvance, AUTO_ADVANCE_MS);
+    }
+
+    private void autoAdvance() {
+        if (!resumed || !heroActive()) return;
+        if (zone != ZONE_HERO && zone != ZONE_GRID && !inputsMenu.isShowing() && !styleMenu.isShowing()) {
+            hero.step(1);
+        }
+        scheduleAutoAdvance();
     }
 
     void launch(Intent intent, CharSequence label) {
@@ -519,7 +652,8 @@ public final class MainActivity extends Activity {
         gridIndex = clamp(gridIndex, 0, Math.max(0, gridApps.size() - 1));
         if (zone == ZONE_GRID && gridApps.isEmpty()) zone = ZONE_DOCK;
         if (zone == ZONE_DOCK && dockApps.isEmpty()) zone = ZONE_TOP;
-        if (zone < ZONE_TOP || zone > ZONE_GRID) zone = ZONE_DOCK;
+        if (zone == ZONE_HERO && !heroActive()) zone = ZONE_DOCK;
+        if (zone < ZONE_TOP || zone > ZONE_HERO) zone = ZONE_DOCK;
         page.post(() -> applyFocus(false));
     }
 
@@ -596,71 +730,6 @@ public final class MainActivity extends Activity {
         return raw.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + raw.substring(1).toLowerCase(java.util.Locale.ROOT);
     }
 
-    /**
-     * Content shelf: when the focused dock app shares recommendations (Netflix does on Fire OS),
-     * up to four artwork cards replace the large app name, fanned slightly in 3D.
-     */
-    private void updateShelf(boolean animate) {
-        AppEntry app = (zone != ZONE_GRID && !dockApps.isEmpty()) ? dockApps.get(dockIndex) : null;
-        List<Recommendations.Item> items = app == null ? new ArrayList<>() : Recommendations.forPackage(app.packageName);
-        if (items.isEmpty()) {
-            shelf.setVisibility(View.GONE);
-            shelfCaption.setVisibility(View.GONE);
-            title.setVisibility(View.VISIBLE);
-            shelfPackage = null;
-            shelfItems = items;
-            return;
-        }
-        title.setVisibility(View.GONE);
-        shelfCaption.setText(getString(R.string.shelf_caption, app.label));
-        shelfCaption.setTypeface(Fonts.outfit(this, 400));
-        shelfCaption.setVisibility(View.VISIBLE);
-        shelf.setVisibility(View.VISIBLE);
-        boolean changed = !app.packageName.equals(shelfPackage) || !sameItems(items, shelfItems);
-        shelfPackage = app.packageName;
-        shelfItems = items;
-        shelf.setAlpha(zone == ZONE_DOCK ? 1f : 0.45f);
-        if (!changed) return;
-
-        shelf.removeAllViews();
-        float density = getResources().getDisplayMetrics().density;
-        int width = getResources().getDimensionPixelSize(R.dimen.shelf_card_width);
-        int height = getResources().getDimensionPixelSize(R.dimen.shelf_card_height);
-        float middle = (items.size() - 1) / 2f;
-        for (int i = 0; i < items.size(); i++) {
-            ImageView card = new ImageView(this);
-            card.setImageBitmap(items.get(i).image);
-            card.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            card.setBackgroundResource(R.drawable.tile_bg);
-            card.setClipToOutline(true);
-            card.setContentDescription(items.get(i).title);
-            card.setCameraDistance(8000 * density);
-            card.setRotationY((i - middle) * -6f); // fanned towards the centre
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, height);
-            lp.setMarginEnd(Math.round(16 * density));
-            shelf.addView(card, lp);
-            if (animate) {
-                // Pop out of the screen: each card tips up and springs forward in turn.
-                card.setAlpha(0f);
-                card.setScaleX(0.86f);
-                card.setScaleY(0.86f);
-                card.setRotationX(24f);
-                card.setTranslationY(18 * density);
-                card.animate().alpha(1f).scaleX(1f).scaleY(1f).rotationX(0f).translationY(0f)
-                        .setStartDelay(i * 70L).setDuration(460)
-                        .setInterpolator(new OvershootInterpolator(1.3f)).start();
-            }
-        }
-    }
-
-    private static boolean sameItems(List<Recommendations.Item> a, List<Recommendations.Item> b) {
-        if (a.size() != b.size()) return false;
-        for (int i = 0; i < a.size(); i++) {
-            if (!a.get(i).key.equals(b.get(i).key)) return false;
-        }
-        return true;
-    }
-
     private void updateGreeting() {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         int text;
@@ -675,6 +744,7 @@ public final class MainActivity extends Activity {
         }
         String name = ownerName();
         greeting.setText(name == null ? getString(text) : getString(R.string.greeting_with_name, getString(text), name));
+        if (hero != null) hero.setGreeting(greeting.getText());
     }
 
     private void applyTypefaces() {

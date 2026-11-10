@@ -10,7 +10,5 @@
     <dimen name="pill_height">36dp</dimen>
     <dimen name="apps_offset">540dp</dimen>
     <dimen name="dock_row_width">848dp</dimen>
-    <dimen name="shelf_card_width">176dp</dimen>
-    <dimen name="shelf_card_height">99dp</dimen>
     <dimen name="menu_width">240dp</dimen>
 </resources>

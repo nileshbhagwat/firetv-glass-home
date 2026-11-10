@@ -69,20 +69,10 @@
             <intent-filter>
                 <action android:name="dev.glasshome.launcher.SET_DOCK" />
                 <action android:name="dev.glasshome.launcher.SET_NAME" />
+                <action android:name="dev.glasshome.launcher.SET_STYLE" />
                 <action android:name="dev.glasshome.launcher.RELOAD" />
             </intent-filter>
         </receiver>
-
-        <!-- Reads content recommendations that apps post (for the content shelf). -->
-        <service
-            android:name=".RecommendationListener"
-            android:exported="true"
-            android:label="@string/recommendations_label"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
 
         <!-- Brings Glass Home back when Fire OS opens its own home screen. -->
         <service

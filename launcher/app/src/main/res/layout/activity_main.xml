@@ -34,6 +34,14 @@
             android:layout_marginStart="-110dp"
             android:layout_marginTop="120dp" />
 
+        <!-- Featured-title styles (gallery ring, depth clock, ...) draw here, behind the dock. -->
+        <FrameLayout
+            android:id="@+id/hero"
+            android:layout_width="match_parent"
+            android:layout_height="540dp"
+            android:clipChildren="false"
+            android:clipToPadding="false" />
+
         <View
             android:id="@+id/dock_band"
             android:layout_width="880dp"
@@ -48,6 +56,7 @@
             android:layout_height="match_parent" />
 
         <LinearLayout
+            android:id="@+id/clock_group"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="70dp"
@@ -122,27 +131,6 @@
             android:singleLine="true"
             android:textColor="@color/text_primary"
             android:textSize="46sp" />
-
-        <TextView
-            android:id="@+id/shelf_caption"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="70dp"
-            android:layout_marginTop="194dp"
-            android:textColor="@color/text_secondary"
-            android:textSize="16sp"
-            android:visibility="gone" />
-
-        <LinearLayout
-            android:id="@+id/shelf"
-            android:layout_width="wrap_content"
-            android:layout_height="112dp"
-            android:layout_marginStart="70dp"
-            android:layout_marginTop="220dp"
-            android:clipChildren="false"
-            android:clipToPadding="false"
-            android:orientation="horizontal"
-            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/dock_row"

@@ -49,8 +49,6 @@ if [ "${ENABLE_HOME_HELPER:-1}" = "1" ]; then
     tv shell settings put secure accessibility_enabled 1
 fi
 
-echo "Allowing the content shelf to read app recommendations (notification access)"
-tv shell cmd notification allow_listener $PKG/$PKG.RecommendationListener || true
 
 tv shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME -n $PKG/.MainActivity > /dev/null
 echo "Done. Glass Home is running on $TV."

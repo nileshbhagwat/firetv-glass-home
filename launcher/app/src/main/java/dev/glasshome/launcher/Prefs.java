@@ -24,6 +24,7 @@ final class Prefs {
     private static final String KEY_DOCK_INDEX = "focus_dock";
     private static final String KEY_GRID = "focus_grid";
     private static final String KEY_OWNER = "owner_name";
+    private static final String KEY_STYLE = "home_style";
 
     private Prefs() {
     }
@@ -78,6 +79,15 @@ final class Prefs {
             editor.putString(KEY_OWNER, name.trim());
         }
         editor.commit();
+    }
+
+    /** The chosen home style (see {@link HomeStyle}); classic when none was chosen. */
+    static String style(Context context) {
+        return HomeStyle.normalize(prefs(context).getString(KEY_STYLE, HomeStyle.CLASSIC));
+    }
+
+    static void setStyle(Context context, String style) {
+        prefs(context).edit().putString(KEY_STYLE, HomeStyle.normalize(style)).commit();
     }
 
     static void saveFocus(Context context, int zone, int top, int dock, int grid) {

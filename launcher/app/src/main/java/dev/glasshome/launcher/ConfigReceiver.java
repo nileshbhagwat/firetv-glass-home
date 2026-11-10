@@ -9,13 +9,17 @@ import android.content.Intent;
  *
  * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver \
  *     -a dev.glasshome.launcher.SET_DOCK --es packages "com.a,com.b,com.c,com.d"
+ * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver \
+ *     -a dev.glasshome.launcher.SET_STYLE --es style ring
  * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver -a dev.glasshome.launcher.RELOAD
  */
 public final class ConfigReceiver extends BroadcastReceiver {
     static final String ACTION_SET_DOCK = "dev.glasshome.launcher.SET_DOCK";
     static final String ACTION_SET_NAME = "dev.glasshome.launcher.SET_NAME";
+    static final String ACTION_SET_STYLE = "dev.glasshome.launcher.SET_STYLE";
     static final String EXTRA_NAME = "name";
     static final String EXTRA_PACKAGES = "packages";
+    static final String EXTRA_STYLE = "style";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -23,6 +27,8 @@ public final class ConfigReceiver extends BroadcastReceiver {
             Prefs.setDock(context, intent.getStringExtra(EXTRA_PACKAGES));
         } else if (ACTION_SET_NAME.equals(intent.getAction())) {
             Prefs.setOwnerName(context, intent.getStringExtra(EXTRA_NAME));
+        } else if (ACTION_SET_STYLE.equals(intent.getAction())) {
+            Prefs.setStyle(context, intent.getStringExtra(EXTRA_STYLE));
         }
         context.sendBroadcast(new Intent(MainActivity.ACTION_REFRESH).setPackage(context.getPackageName()));
     }
