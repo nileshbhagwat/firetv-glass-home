@@ -233,6 +233,9 @@ public final class MainActivity extends Activity {
         super.onNewIntent(intent);
         inputsMenu.dismiss();
         styleMenu.dismiss(true);
+        debug("home intent: reset=" + intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false)
+                + " from=" + intent.getStringExtra(HomeRedirectService.EXTRA_FROM_PACKAGE)
+                + " zone=" + zone + " dock=" + dockIndex);
         if (intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false)) {
             // Home pressed while Glass Home was already in front: return to the dock.
             if (!dockApps.isEmpty()) zone = ZONE_DOCK;
@@ -275,13 +278,18 @@ public final class MainActivity extends Activity {
         super.onDestroy();
     }
 
+    /** Diagnostics, off by default: adb shell setprop log.tag.GlassHome DEBUG */
+    private static void debug(String message) {
+        if (android.util.Log.isLoggable("GlassHome", android.util.Log.DEBUG)) {
+            android.util.Log.d("GlassHome", message);
+        }
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
-        if (android.util.Log.isLoggable("GlassHome", android.util.Log.DEBUG)) {
-            android.util.Log.d("GlassHome", "key " + KeyEvent.keyCodeToString(event.getKeyCode())
-                    + (event.getAction() == KeyEvent.ACTION_DOWN ? " down" : " up")
-                    + " zone=" + zone + " menu=" + inputsMenu.isShowing());
-        }
+        debug("key " + KeyEvent.keyCodeToString(event.getKeyCode())
+                + (event.getAction() == KeyEvent.ACTION_DOWN ? " down" : " up")
+                + " zone=" + zone + " dock=" + dockIndex + " menu=" + inputsMenu.isShowing());
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         if (down) scheduleAutoAdvance(); // never change title while someone is using the remote
         // While a menu is open it receives the remote's keys from here (it never takes window
@@ -582,6 +590,8 @@ public final class MainActivity extends Activity {
         main.removeCallbacks(followApp);
         String wanted = focusedDockPackage();
         if (java.util.Objects.equals(wanted, heroPackage) && !heroSwitching) return;
+        debug("featured titles follow " + wanted + " (was " + heroPackage + ", dock " + dockIndex
+                + "/" + dockApps.size() + ", animate " + animate + ")");
         heroPackage = wanted;
         if (hero == null) return;
         heroSlot.animate().cancel();
@@ -703,6 +713,7 @@ public final class MainActivity extends Activity {
     }
 
     private void applyApps(List<AppEntry> dock, List<AppEntry> rest) {
+        debug("apps loaded: dock " + dock.size() + ", others " + rest.size() + ", zone=" + zone + " dock=" + dockIndex);
         dockApps.clear();
         dockApps.addAll(dock);
         gridApps.clear();
