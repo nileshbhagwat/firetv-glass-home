@@ -36,6 +36,9 @@ final class AppRepository {
             "com.amazon.ssm",
             "com.amazon.hedwig",
             "com.amazon.tv.earlyaccess",
+            // The Appstore stays installed (apps from Amazon's store need it for updates and
+            // licence checks) but has no tile.
+            "com.amazon.venezia",
             "com.android.documentsui",
             "com.mediatek.opapp",
             "com.vewd.core.fvpplayer",
