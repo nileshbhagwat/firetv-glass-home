@@ -40,7 +40,10 @@ import urllib.request
 import numpy as np
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageOps
 
-API = "https://api.themoviedb.org/3"
+# TMDB's alternate API domain: some Indian internet providers cut connections to
+# api.themoviedb.org during the TLS handshake (most requests fail), while api.tmdb.org, which
+# TMDB provides for such networks, answers normally. Same API and token.
+API = "https://api.tmdb.org/3"
 IMAGES = "https://image.tmdb.org/t/p/original"
 FULL = (1920, 1080)
 CARD = (768, 432)
