@@ -25,7 +25,6 @@ final class Prefs {
     private static final String KEY_GRID = "focus_grid";
     private static final String KEY_OWNER = "owner_name";
     private static final String KEY_STYLE = "home_style";
-    private static final String KEY_TITLES_FOLLOW_APP = "titles_follow_app";
 
     private Prefs() {
     }
@@ -85,18 +84,6 @@ final class Prefs {
     /** The chosen home style (see {@link HomeStyle}); classic when none was chosen. */
     static String style(Context context) {
         return HomeStyle.normalize(prefs(context).getString(KEY_STYLE, HomeStyle.CLASSIC));
-    }
-
-    /**
-     * True (the default) when the featured styles show the titles of the app focused in the
-     * dock; false when they show titles from all apps.
-     */
-    static boolean titlesFollowApp(Context context) {
-        return prefs(context).getBoolean(KEY_TITLES_FOLLOW_APP, true);
-    }
-
-    static void setTitlesFollowApp(Context context, boolean value) {
-        prefs(context).edit().putBoolean(KEY_TITLES_FOLLOW_APP, value).commit();
     }
 
     static void setStyle(Context context, String style) {

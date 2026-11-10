@@ -10,7 +10,7 @@ import android.content.Intent;
  * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver \
  *     -a dev.glasshome.launcher.SET_DOCK --es packages "com.a,com.b,com.c,com.d"
  * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver \
- *     -a dev.glasshome.launcher.SET_STYLE --es style ring --es titles all
+ *     -a dev.glasshome.launcher.SET_STYLE --es style ring
  * adb shell am broadcast -n dev.glasshome.launcher/.ConfigReceiver -a dev.glasshome.launcher.RELOAD
  */
 public final class ConfigReceiver extends BroadcastReceiver {
@@ -20,9 +20,6 @@ public final class ConfigReceiver extends BroadcastReceiver {
     static final String EXTRA_NAME = "name";
     static final String EXTRA_PACKAGES = "packages";
     static final String EXTRA_STYLE = "style";
-    /** "focused" (the focused app's titles) or "all" (titles from all apps). */
-    static final String EXTRA_TITLES = "titles";
-    static final String TITLES_ALL_APPS = "all";
 
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -31,10 +28,7 @@ public final class ConfigReceiver extends BroadcastReceiver {
         } else if (ACTION_SET_NAME.equals(intent.getAction())) {
             Prefs.setOwnerName(context, intent.getStringExtra(EXTRA_NAME));
         } else if (ACTION_SET_STYLE.equals(intent.getAction())) {
-            String style = intent.getStringExtra(EXTRA_STYLE);
-            if (style != null) Prefs.setStyle(context, style);
-            String titles = intent.getStringExtra(EXTRA_TITLES);
-            if (titles != null) Prefs.setTitlesFollowApp(context, !TITLES_ALL_APPS.equals(titles));
+            Prefs.setStyle(context, intent.getStringExtra(EXTRA_STYLE));
         }
         context.sendBroadcast(new Intent(MainActivity.ACTION_REFRESH).setPackage(context.getPackageName()));
     }
