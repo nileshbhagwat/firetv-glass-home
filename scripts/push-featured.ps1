@@ -38,5 +38,8 @@ if ($Remove) {
   Remove-Item $tar -Force
 }
 Invoke-Tv $Device shell am broadcast -n "$pkg/.ConfigReceiver" -a "$pkg.RELOAD" | Out-Null
-$count = (Invoke-Tv $Device shell "run-as $pkg ls files/featured 2>/dev/null" | Where-Object { $_ -match '-card\.jpg$' }).Count
+# Count titles from the index on the TV: a title on two apps is one picture but two titles.
+$index = (Invoke-Tv $Device shell "run-as $pkg cat files/featured/index.json 2>/dev/null") -join "`n"
+$count = 0
+if ($index -match '"items"') { try { $count = @(($index | ConvertFrom-Json).items).Count } catch { } }
 Write-Host "Featured titles on the TV: $count"
