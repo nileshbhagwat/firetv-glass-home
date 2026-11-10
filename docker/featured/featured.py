@@ -11,9 +11,11 @@ the laptop. On the TV, the home screen shows only the titles of the app focused 
     python featured.py --out /work/featured/out           # needs TMDB_TOKEN
     python featured.py --out /work/featured/out --demo    # generated demo artwork, no account
 
-"Popular this month" means TMDB's popularity ranking, which follows the last few weeks of
-interest, among films and series first released in the last year (two years for apps with
-few titles).
+"Popular this month" means TMDB's popularity ranking (built from each day's views, votes,
+favourites and watchlist additions, carried over from day to day; see
+developer.themoviedb.org/docs/popularity-and-trending) among films and series first released
+in the last year (two years for apps with few titles), so older favourites do not crowd out
+what is new.
 
 Blending, so the cut-out looks like it stands in front of the picture rather than pasted on:
   * depth of field: the background plate is softened and dimmed slightly;
@@ -116,11 +118,11 @@ WINDOWS = (365, 730)
 def popular_ids(tmdb, media, region, provider_ids):
     """TMDB ids of one app's most popular films (media "movie") or series ("tv").
 
-    Ranked by TMDB popularity, which follows viewing and interest over the last few weeks, so
-    this month's big releases come first. Uses TMDB's streaming-service filter (watch_region +
-    with_watch_providers), so every title streams on that app in the region. A series counts
-    from its first episode: filtering on any recent episode would favour daily and weekly
-    shows that have run for years."""
+    Ranked by TMDB popularity, which is driven by each day's views, votes and watchlist
+    additions, so the titles people are watching now come first. Uses TMDB's
+    streaming-service filter (watch_region + with_watch_providers), so every title streams on
+    that app in the region. A series counts from its first episode: filtering on any recent
+    episode would favour daily and weekly shows that have run for years."""
     today = datetime.date.today()
     date_field = "primary_release_date" if media == "movie" else "first_air_date"
     seen = set()
