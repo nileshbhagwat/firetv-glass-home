@@ -60,3 +60,33 @@ com.vewd.core.tis
 com.vewd.core.tvapp
 org.obs.mhegservice
 com.amazon.fvpsupport
+
+# System updates (keeps the setup stable; no new Fire OS security patches)
+restrict:com.amazon.device.software.ota
+restrict:com.amazon.device.software.ota.override
+com.amazon.tv.forcedotaupdater.v2
+com.amazon.tv.easyupgrade
+
+# Amazon extras
+com.amazon.ftv.screensaver
+restrict:com.amazon.tv.csapp
+com.amazon.hedwig
+
+# Casting and screen mirroring
+com.amazon.dialservice
+com.amazon.awvflingreceiver
+com.amazon.cast.sink
+
+# Alexa, voice search and smart home (the remote's mic button stops working)
+com.amazon.vizzini
+com.amazon.alexa.datastore.app
+com.amazon.alexa.externalmediaplayer.fireos
+com.amazon.alexadirectivebrokerservice
+com.amazon.alexamediaplayer.runtime.ftv
+com.amazon.tv.alexaalerts
+com.amazon.tv.alexanotifications
+com.amazon.firetv.androidskillconnectioncapability
+com.amazon.rtcsessioncontroller
+com.amazon.spotify.mediabrowserservice
+com.amazon.tv.matter
+com.amazon.tv.mattercohost
