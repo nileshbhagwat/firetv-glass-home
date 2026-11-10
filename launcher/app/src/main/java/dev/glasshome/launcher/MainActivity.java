@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
@@ -19,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -448,6 +450,7 @@ public final class MainActivity extends Activity {
         for (AppEntry entry : dockApps) {
             View tile = inflater.inflate(R.layout.item_tile, dockRow, false);
             TileViews.bind(tile, entry);
+            sizeDockTile(tile, dockApps.size());
             dockRow.addView(tile);
             dockTiles.add(tile);
         }
@@ -461,6 +464,26 @@ public final class MainActivity extends Activity {
         if (zone == ZONE_DOCK && dockApps.isEmpty()) zone = ZONE_TOP;
         if (zone < ZONE_TOP || zone > ZONE_GRID) zone = ZONE_DOCK;
         page.post(() -> applyFocus(false));
+    }
+
+    /** Four or fewer dock apps use full-size tiles; more shrink proportionally to fit the band. */
+    private void sizeDockTile(View tile, int count) {
+        Resources res = getResources();
+        int fullSlot = res.getDimensionPixelSize(R.dimen.tile_slot_width);
+        int fullWidth = res.getDimensionPixelSize(R.dimen.tile_width);
+        int fullHeight = res.getDimensionPixelSize(R.dimen.tile_height);
+        int slot = count > 4 ? res.getDimensionPixelSize(R.dimen.dock_row_width) / count : fullSlot;
+        float scale = slot / (float) fullSlot;
+        int width = Math.round(fullWidth * scale);
+        int height = Math.round(fullHeight * scale);
+
+        tile.getLayoutParams().width = slot;
+        FrameLayout.LayoutParams card = (FrameLayout.LayoutParams) TileViews.card(tile).getLayoutParams();
+        card.width = width;
+        card.height = height;
+        card.topMargin = res.getDimensionPixelSize(R.dimen.tile_top) + (fullHeight - height) / 2;
+        FrameLayout.LayoutParams label = (FrameLayout.LayoutParams) tile.findViewById(R.id.label).getLayoutParams();
+        label.topMargin = card.topMargin + height + Math.round(12 * res.getDisplayMetrics().density);
     }
 
     private void loadWallpaper() {

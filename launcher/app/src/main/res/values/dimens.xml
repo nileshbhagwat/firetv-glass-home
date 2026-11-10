@@ -9,5 +9,6 @@
     <dimen name="tile_top">12dp</dimen>
     <dimen name="pill_height">36dp</dimen>
     <dimen name="apps_offset">540dp</dimen>
+    <dimen name="dock_row_width">848dp</dimen>
     <dimen name="menu_width">240dp</dimen>
 </resources>

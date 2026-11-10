@@ -13,7 +13,9 @@ final class Prefs {
             "com.netflix.ninja",          // Netflix
             "com.amazon.firebat",         // Prime Video
             "com.amazon.firetv.youtube",  // YouTube
-            "in.startv.hotstar");         // JioHotstar
+            "in.startv.hotstar",          // JioHotstar
+            "com.onemainstream.sonyliv.android", // SonyLIV
+            "com.zee5.amazon");           // Zee5
 
     private static final String FILE = "glasshome";
     private static final String KEY_DOCK = "dock_packages";

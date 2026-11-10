@@ -125,7 +125,7 @@
 
         <LinearLayout
             android:id="@+id/dock_row"
-            android:layout_width="848dp"
+            android:layout_width="@dimen/dock_row_width"
             android:layout_height="@dimen/tile_slot_height"
             android:layout_gravity="top|center_horizontal"
             android:layout_marginTop="348dp"
