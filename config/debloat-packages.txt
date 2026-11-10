@@ -41,6 +41,12 @@ com.amazon.gamehub
 com.amazon.tv.website_launcher
 com.amazon.bueller.photos
 com.mediatek.opapp
+com.apple.airplay.amazon.airplay
+com.amazon.smarthomemapviewapp
+com.amazon.tahoe
+com.amazon.spiderpork
+com.amazon.bueller.music
+com.amazon.cloud9
 
 # Streaming apps not in use
 com.jio.media.stb.ondemand
