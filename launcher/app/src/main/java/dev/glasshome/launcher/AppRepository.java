@@ -6,6 +6,10 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 
 import java.text.Collator;
@@ -47,16 +51,24 @@ final class AppRepository {
 
     static List<AppEntry> loadAll(Context context) {
         PackageManager pm = context.getPackageManager();
+        Resources res = context.getResources();
+        // Render banners and icons once at their on-screen size (including the focus scale-up).
+        // Apps often ship banners many times larger than a tile; keeping those would cost
+        // tens of megabytes of memory on a TV with little to spare.
+        Sizes sizes = new Sizes(
+                Math.round(res.getDimension(R.dimen.tile_width) * TileViews.FOCUS_SCALE),
+                Math.round(res.getDimension(R.dimen.tile_height) * TileViews.FOCUS_SCALE),
+                Math.round(56 * res.getDisplayMetrics().density * TileViews.FOCUS_SCALE));
         Map<String, AppEntry> byPackage = new LinkedHashMap<>();
-        collect(pm, byPackage, Intent.CATEGORY_LEANBACK_LAUNCHER);
-        collect(pm, byPackage, Intent.CATEGORY_LAUNCHER);
+        collect(pm, res, sizes, byPackage, Intent.CATEGORY_LEANBACK_LAUNCHER);
+        collect(pm, res, sizes, byPackage, Intent.CATEGORY_LAUNCHER);
         List<AppEntry> apps = new ArrayList<>(byPackage.values());
         Collator collator = Collator.getInstance();
         apps.sort((a, b) -> collator.compare(a.label.toString(), b.label.toString()));
         return apps;
     }
 
-    private static void collect(PackageManager pm, Map<String, AppEntry> out, String category) {
+    private static void collect(PackageManager pm, Resources res, Sizes sizes, Map<String, AppEntry> out, String category) {
         Intent query = new Intent(Intent.ACTION_MAIN).addCategory(category);
         for (ResolveInfo info : pm.queryIntentActivities(query, 0)) {
             ActivityInfo activity = info.activityInfo;
@@ -74,9 +86,36 @@ final class AppRepository {
             if (banner == null) {
                 banner = activity.applicationInfo.loadBanner(pm);
             }
-            Drawable icon = activity.loadIcon(pm);
+            Drawable icon = banner == null ? render(res, activity.loadIcon(pm), sizes.icon, sizes.icon) : null;
+            banner = render(res, banner, sizes.bannerWidth, sizes.bannerHeight);
             CharSequence label = info.loadLabel(pm);
             out.put(activity.packageName, new AppEntry(activity.packageName, launch, label, banner, icon));
+        }
+    }
+
+    private static Drawable render(Resources res, Drawable source, int width, int height) {
+        if (source == null || width <= 0 || height <= 0) {
+            return source;
+        }
+        try {
+            Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            source.setBounds(0, 0, width, height);
+            source.draw(new Canvas(bitmap));
+            return new BitmapDrawable(res, bitmap);
+        } catch (RuntimeException e) {
+            return source;
+        }
+    }
+
+    private static final class Sizes {
+        final int bannerWidth;
+        final int bannerHeight;
+        final int icon;
+
+        Sizes(int bannerWidth, int bannerHeight, int icon) {
+            this.bannerWidth = bannerWidth;
+            this.bannerHeight = bannerHeight;
+            this.icon = icon;
         }
     }
 }
