@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem One click: find this week's trending titles on your apps, cut out the characters and send
+rem One click: find each app's popular titles this month, cut out the characters and send
 rem them to the TV. Needs TMDB_TOKEN in tv.env. "featured.bat demo" uses generated artwork.
 cd /d "%~dp0"
 set "IMAGE=glasshome-featured:1"

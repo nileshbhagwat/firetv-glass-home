@@ -2,13 +2,17 @@
 """
 Featured titles for Glass Home.
 
-Finds this week's trending films and series that stream in India on the apps in the dock
-(data from TMDB), cuts the main character out of each title's artwork with the ISNet matting
-model, blends it so it reads as a separate 3D layer, and writes the images and index.json that
-scripts/push-featured.ps1 copies to the TV. All of this runs on the laptop.
+For each streaming app in the dock, finds its most popular films and series in India this
+month (data from TMDB's streaming-service filter), cuts the main character out of each title's
+artwork with the ISNet matting model, blends it so it reads as a separate 3D layer, and writes
+the images and index.json that scripts/push-featured.ps1 copies to the TV. All of this runs on
+the laptop. On the TV, the home screen shows only the titles of the app focused in the dock.
 
     python featured.py --out /work/featured/out           # needs TMDB_TOKEN
     python featured.py --out /work/featured/out --demo    # generated demo artwork, no account
+
+"This month" means films released, or series with episodes aired, in the last 30 days, most
+popular first. Apps with few such titles are topped up from the last 90, then 365 days.
 
 Blending, so the cut-out looks like it stands in front of the picture rather than pasted on:
   * depth of field: the background plate is softened and dimmed slightly;
@@ -80,58 +84,63 @@ class Tmdb:
         raise RuntimeError("TMDB did not answer: " + path)
 
 
-def provider_map(tmdb, region):
-    """TMDB provider id -> (package, label) for the services in the dock."""
-    found = {}
+def app_providers(tmdb, region):
+    """[(package, label, TMDB provider ids)] for the dock's services offered in the region.
+
+    One app can have several TMDB entries (for example a plan with adverts); all are used."""
+    ids = {package: set() for _, package, _ in PROVIDERS}
     for media in ("movie", "tv"):
         for p in tmdb.get(f"/watch/providers/{media}", watch_region=region).get("results", []):
             name = p.get("provider_name", "").lower()
-            for pattern, package, label in PROVIDERS:
+            for pattern, package, _ in PROVIDERS:
                 if re.search(pattern, name):
-                    found[p["provider_id"]] = (package, label)
-    return found
+                    ids[package].add(p["provider_id"])
+    return [(package, label, sorted(ids[package])) for _, package, label in PROVIDERS if ids[package]]
 
 
-def candidates(tmdb, region, providers):
-    """Trending titles first, then the most popular titles on the dock's services."""
+# Look-back windows in days: this month first, widened for apps with few new titles.
+WINDOWS = (30, 90, 365)
+
+
+def popular_ids(tmdb, media, region, provider_ids):
+    """TMDB ids of one app's most popular films (media "movie") or series ("tv").
+
+    Films released, or series with an episode aired, in the last 30 days come first, most
+    popular first; then the 90-day and 365-day windows. Uses TMDB's streaming-service filter
+    (watch_region + with_watch_providers), so every title streams on that app in the region."""
+    today = datetime.date.today()
+    date_field = "primary_release_date" if media == "movie" else "air_date"
     seen = set()
-    for page in (1, 2, 3):
-        for r in tmdb.get("/trending/all/week", page=page).get("results", []):
-            key = (r.get("media_type"), r.get("id"))
-            if key[0] in ("movie", "tv") and not r.get("adult") and key not in seen:
-                seen.add(key)
-                yield key
-    ids = "|".join(str(i) for i in providers)
-    for media in ("movie", "tv"):
+    for days in WINDOWS:
+        params = {
+            f"{date_field}.gte": (today - datetime.timedelta(days=days)).isoformat(),
+            f"{date_field}.lte": today.isoformat(),
+            "watch_region": region,
+            "with_watch_providers": "|".join(str(i) for i in provider_ids),
+            "with_watch_monetization_types": "flatrate|free|ads",
+            "sort_by": "popularity.desc",
+            "include_adult": "false",
+        }
         for page in (1, 2):
-            data = tmdb.get(f"/discover/{media}", watch_region=region, with_watch_providers=ids,
-                            with_watch_monetization_types="flatrate", sort_by="popularity.desc",
-                            include_adult="false", page=page)
+            data = tmdb.get(f"/discover/{media}", page=page, **params)
             for r in data.get("results", []):
-                key = (media, r.get("id"))
-                if key not in seen:
-                    seen.add(key)
-                    yield key
+                if r.get("id") not in seen and not r.get("adult"):
+                    seen.add(r["id"])
+                    yield r["id"]
+            if page >= data.get("total_pages", 0):
+                break
 
 
-def describe(tmdb, media, ident, region, providers):
-    """Title, streaming app and textless backdrop for one candidate, or None."""
-    d = tmdb.get(f"/{media}/{ident}", append_to_response="images,watch/providers",
-                 include_image_language="null,en")
-    offers = d.get("watch/providers", {}).get("results", {}).get(region, {}).get("flatrate", [])
-    app = next((providers[o["provider_id"]] for o in offers if o.get("provider_id") in providers), None)
-    if app is None:
-        return None
+def describe(tmdb, media, ident):
+    """Title and the best textless backdrop for one film or series, or None."""
+    d = tmdb.get(f"/{media}/{ident}", append_to_response="images", include_image_language="null")
     backdrops = [b for b in d.get("images", {}).get("backdrops", [])
                  if b.get("iso_639_1") is None and b.get("width", 0) >= 1280]
     if not backdrops:
         return None
     backdrops.sort(key=lambda b: (b.get("vote_average", 0), b.get("width", 0)), reverse=True)
     return {
-        "id": f"{media}-{ident}",
         "title": d.get("title") or d.get("name") or "",
-        "package": app[0],
-        "provider": app[1],
         "image": IMAGES + backdrops[0]["file_path"],
     }
 
@@ -340,19 +349,24 @@ def build(image, matter, out_dir, n):
 
 # ----------------------------------------------------------------------------- demo artwork
 
+# One film and one series per app: (title, kind, app label, package, sky colours, sun x, figure x).
 DEMO = [
-    ("Midnight Harbor", "Prime Video", "com.amazon.firebat", ((8, 23, 42), (22, 58, 86), (184, 99, 58)), 0.72, 0.36),
-    ("Saffron Skies", "Netflix", "com.netflix.ninja", ((42, 15, 30), (122, 46, 58), (240, 160, 64)), 0.28, 0.62),
-    ("The Last Monsoon", "JioHotstar", "in.startv.hotstar", ((6, 20, 28), (31, 74, 82), (111, 154, 138)), 0.66, 0.32),
-    ("Glass City", "SonyLIV", "com.onemainstream.sonyliv.android", ((11, 11, 36), (58, 42, 120), (208, 90, 154)), 0.30, 0.64),
-    ("Northbound", "Zee5", "com.zee5.amazon", ((10, 26, 42), (63, 111, 154), (216, 230, 240)), 0.70, 0.40),
-    ("Ember Road", "Netflix", "com.netflix.ninja", ((26, 10, 6), (90, 30, 14), (255, 122, 42)), 0.25, 0.58),
+    ("Saffron Skies", "movie", "Netflix", "com.netflix.ninja", ((42, 15, 30), (122, 46, 58), (240, 160, 64)), 0.28, 0.62),
+    ("Ember Road", "tv", "Netflix", "com.netflix.ninja", ((26, 10, 6), (90, 30, 14), (255, 122, 42)), 0.25, 0.58),
+    ("Midnight Harbor", "movie", "Prime Video", "com.amazon.firebat", ((8, 23, 42), (22, 58, 86), (184, 99, 58)), 0.72, 0.36),
+    ("Tidewater", "tv", "Prime Video", "com.amazon.firebat", ((4, 18, 30), (18, 70, 96), (120, 196, 210)), 0.30, 0.66),
+    ("The Last Monsoon", "movie", "JioHotstar", "in.startv.hotstar", ((6, 20, 28), (31, 74, 82), (111, 154, 138)), 0.66, 0.32),
+    ("Kite Season", "tv", "JioHotstar", "in.startv.hotstar", ((30, 20, 8), (110, 80, 30), (250, 200, 90)), 0.70, 0.38),
+    ("Glass City", "movie", "SonyLIV", "com.onemainstream.sonyliv.android", ((11, 11, 36), (58, 42, 120), (208, 90, 154)), 0.30, 0.64),
+    ("Night Shift", "tv", "SonyLIV", "com.onemainstream.sonyliv.android", ((6, 8, 20), (30, 34, 80), (150, 120, 220)), 0.72, 0.34),
+    ("Northbound", "movie", "Zee5", "com.zee5.amazon", ((10, 26, 42), (63, 111, 154), (216, 230, 240)), 0.70, 0.40),
+    ("Paper Lanterns", "tv", "Zee5", "com.zee5.amazon", ((24, 6, 18), (96, 28, 52), (255, 150, 90)), 0.26, 0.60),
 ]
 
 
 def demo_scene(spec):
     """A generated scene with a figure, used to try the styles without a TMDB account."""
-    _, _, _, (top, mid, horizon), sun_x, fig_x = spec
+    (top, mid, horizon), sun_x, fig_x = spec[4:]
     w, h = FULL
     y = np.linspace(0, 1, h)[:, None, None]
     top, mid, horizon = (np.array(c, np.float32) for c in (top, mid, horizon))
@@ -394,10 +408,49 @@ def demo_scene(spec):
 
 # ----------------------------------------------------------------------------- main
 
+def app_titles(tmdb, matter, staging, region, media, count, provider_ids, label, built):
+    """Up to `count` prepared films or series for one app, those with a clear character first.
+
+    `built` caches prepared artwork by title, so a title on two apps is processed once."""
+    noun = "film" if media == "movie" else "series"
+    chosen, spare, tries = [], [], 0
+    for ident in popular_ids(tmdb, media, region, provider_ids):
+        if len(chosen) >= count or tries >= count * 3:
+            break
+        key = f"{media}-{ident}"
+        if key not in built:
+            info = describe(tmdb, media, ident)
+            if info is None:
+                built[key] = None  # no textless artwork
+                continue
+            tries += 1
+            print(f"  {label} {noun}: {info['title']}", flush=True)
+            try:
+                built[key] = {"title": info["title"], **build(download(info["image"]), matter, staging, key)}
+            except Exception as e:  # one bad image must not stop the rest
+                print(f"    skipped: {e}", flush=True)
+                built[key] = None
+                continue
+            if "cardChar" not in built[key]:
+                print("    no clear character; kept as a spare", flush=True)
+        if built[key] is not None:
+            (chosen if "cardChar" in built[key] else spare).append({"id": key, "kind": media, **built[key]})
+    return chosen + spare[:max(0, count - len(chosen))]
+
+
+def interleave(films, series):
+    """film, series, film, series, ...: the order the gallery ring shows them in."""
+    out = []
+    for i in range(max(len(films), len(series))):
+        out.extend(x[i] for x in (films, series) if i < len(x))
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", default="/work/featured/out")
-    parser.add_argument("--count", type=int, default=8)
+    parser.add_argument("--films", type=int, default=6, help="films per app")
+    parser.add_argument("--series", type=int, default=4, help="series per app")
     parser.add_argument("--region", default="IN")
     parser.add_argument("--demo", action="store_true", help="use generated demo artwork")
     args = parser.parse_args()
@@ -406,40 +459,30 @@ def main():
     shutil.rmtree(staging, ignore_errors=True)
     os.makedirs(staging)
     matter = Matter(os.environ.get("MATTE_MODEL", "/opt/models/isnet-general-use.onnx"))
-    items, spare = [], []
+    items = []
 
     if args.demo:
         for n, spec in enumerate(DEMO, 1):
-            print(f"[{n}/{len(DEMO)}] {spec[0]} (demo)", flush=True)
-            fields = build(demo_scene(spec), matter, staging, n)
-            items.append({"id": f"demo-{n}", "title": spec[0], "provider": spec[1], "package": spec[2], **fields})
+            title, kind, label, package = spec[:4]
+            print(f"[{n}/{len(DEMO)}] {title} ({label}, demo)", flush=True)
+            key = f"demo-{n}"
+            fields = build(demo_scene(spec), matter, staging, key)
+            items.append({"id": key, "kind": kind, "title": title, "provider": label, "package": package, **fields})
     else:
         token = os.environ.get("TMDB_TOKEN", "")
         if not token:
             sys.exit("TMDB_TOKEN is not set. Add TMDB_TOKEN=... to tv.env (see README).")
         tmdb = Tmdb(token)
-        providers = provider_map(tmdb, args.region)
-        if not providers:
+        apps = app_providers(tmdb, args.region)
+        if not apps:
             sys.exit("TMDB lists none of the dock's streaming services for region " + args.region)
-        n = 0
-        for media, ident in candidates(tmdb, args.region, providers):
-            if len(items) >= args.count:
-                break
-            info = describe(tmdb, media, ident, args.region, providers)
-            if info is None:
-                continue
-            n += 1
-            print(f"[{len(items) + 1}/{args.count}] {info['title']} ({info['provider']})", flush=True)
-            try:
-                fields = build(download(info.pop("image")), matter, staging, n)
-            except Exception as e:  # one bad image must not stop the rest
-                print(f"    skipped: {e}", flush=True)
-                continue
-            entry = {**info, **fields}
-            (items if "cardChar" in fields else spare).append(entry)
-            if "cardChar" not in fields:
-                print("    no clear character; kept as a spare", flush=True)
-        items.extend(spare[:max(0, args.count - len(items))])
+        built = {}
+        for package, label, ids in apps:
+            print(f"{label} (TMDB provider {', '.join(map(str, ids))})", flush=True)
+            films = app_titles(tmdb, matter, staging, args.region, "movie", args.films, ids, label, built)
+            series = app_titles(tmdb, matter, staging, args.region, "tv", args.series, ids, label, built)
+            print(f"  {len(films)} films, {len(series)} series", flush=True)
+            items.extend({**t, "provider": label, "package": package} for t in interleave(films, series))
 
     if not items:
         sys.exit("No featured titles could be prepared.")
