@@ -27,6 +27,14 @@
             android:layout_gravity="center"
             android:importantForAccessibility="no"
             android:scaleType="fitCenter" />
+
+        <View
+            android:id="@+id/sheen"
+            android:layout_width="72dp"
+            android:layout_height="match_parent"
+            android:alpha="0"
+            android:background="@drawable/sheen"
+            android:importantForAccessibility="no" />
     </FrameLayout>
 
     <TextView
