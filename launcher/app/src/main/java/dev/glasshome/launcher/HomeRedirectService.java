@@ -18,27 +18,29 @@ import java.util.Map;
  * When Amazon's home screen stays in front, this service opens Glass Home instead.
  *
  * Rules, in order:
- * - Leaving a Settings screen (Back or Home) is redirected quickly.
+ * - A Home press, or leaving a Settings screen, is redirected immediately.
  * - Entering Settings passes through Amazon's home screen first; that is not redirected.
- * - For two minutes after start-up, Fire OS may bring its home screen back several times
- *   while it settles, so the redirect waits for the home screen to stay put.
+ * - For two minutes after start-up, Fire OS may bring its home screen back while it
+ *   settles, so the redirect waits briefly for the home screen to stay put.
  * - If Amazon's home screen keeps bouncing back right after each redirect, redirects pause
  *   for 30 seconds instead of fighting Fire OS.
  */
 public final class HomeRedirectService extends AccessibilityService {
     static final String ACTION_HOME_BUTTON = "dev.glasshome.launcher.action.HOME_BUTTON";
     static final String EXTRA_RESET_FOCUS = "reset_focus";
+    /** Package of the app that was in front before Home; Glass Home focuses its tile. */
+    static final String EXTRA_FROM_PACKAGE = "from_package";
 
     private static final String TAG = "GlassHome";
     private static final String AMAZON_LAUNCHER = "com.amazon.tv.launcher";
     private static final String AMAZON_HOME_CLASS = "HomeActivity";
     private static final String SETTINGS_PACKAGE = "com.amazon.tv.settings.v2";
 
-    private static final long SETTLE_MS = 300;
+    private static final long SETTLE_MS = 0;
     private static final long SETTINGS_ENTRY_SETTLE_MS = 1200;
     private static final long SETTINGS_ENTRY_WINDOW_MS = 3000;
     private static final long BOOT_PERIOD_MS = 120_000;
-    private static final long BOOT_SETTLE_MS = 1500;
+    private static final long BOOT_SETTLE_MS = 800;
     private static final long BOUNCE_WINDOW_MS = 3000;
     private static final int BOUNCE_LIMIT = 4;
     private static final long PAUSE_MS = 30_000;
@@ -59,9 +61,22 @@ public final class HomeRedirectService extends AccessibilityService {
         Intent home = new Intent(this, MainActivity.class)
                 .setAction(ACTION_HOME_BUTTON)
                 .putExtra(EXTRA_RESET_FOCUS, resetFocus)
+                .putExtra(EXTRA_FROM_PACKAGE, lastPackage)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(home);
+        try {
+            startActivity(home);
+        } catch (RuntimeException e) {
+            // Never leave the Home button without an effect: fall back to Fire OS's home.
+            Log.w(TAG, "Could not open Glass Home", e);
+            performGlobalAction(GLOBAL_ACTION_HOME);
+        }
     };
+
+    // Note: catching the Home key itself (accessibility key filtering) does not help on Fire OS:
+    // the Home key never reaches key filters, and Fire OS draws its home screen regardless.
+    // When a memory-heavy app (for example YouTube) has caused Fire OS to stop its launcher
+    // process, the launcher reloads first (a loading screen for 2-3 seconds) and only then
+    // reports its window, so Glass Home appears after that reload.
 
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {

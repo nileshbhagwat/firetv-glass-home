@@ -170,12 +170,33 @@ public final class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         inputsMenu.dismiss();
-        // Home pressed while Glass Home was already in front: return to the dock (keeping the
-        // remembered dock tile). Returning from another app keeps the last focused tile.
-        if (intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false) && !dockApps.isEmpty()) {
-            zone = ZONE_DOCK;
+        if (intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false)) {
+            // Home pressed while Glass Home was already in front: return to the dock.
+            if (!dockApps.isEmpty()) zone = ZONE_DOCK;
+        } else {
+            // Returning from an app: focus that app's tile, like Apple TV. Otherwise the last
+            // focused tile is kept.
+            focusPackage(intent.getStringExtra(HomeRedirectService.EXTRA_FROM_PACKAGE));
         }
         applyFocus(true);
+    }
+
+    private void focusPackage(String packageName) {
+        if (packageName == null) return;
+        for (int i = 0; i < dockApps.size(); i++) {
+            if (packageName.equals(dockApps.get(i).packageName)) {
+                zone = ZONE_DOCK;
+                dockIndex = i;
+                return;
+            }
+        }
+        for (int i = 0; i < gridApps.size(); i++) {
+            if (packageName.equals(gridApps.get(i).packageName)) {
+                zone = ZONE_GRID;
+                gridIndex = i;
+                return;
+            }
+        }
     }
 
     @Override
