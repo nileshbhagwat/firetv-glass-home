@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="text_primary">#FFF5F5F7</color>
+    <color name="text_secondary">#FF8E8E93</color>
+    <color name="text_pill">#FFE5E5EA</color>
+    <color name="tile">#FF1C1C1E</color>
+    <color name="band">#FF0D0D0F</color>
+    <color name="band_stroke">#14FFFFFF</color>
+    <color name="pill">#17FFFFFF</color>
+    <color name="glass_fill">#24FFFFFF</color>
+    <color name="glass_stroke">#59FFFFFF</color>
+    <color name="menu_bg">#F21C1C1E</color>
+    <color name="menu_stroke">#24FFFFFF</color>
+    <color name="menu_item_focused">#29FFFFFF</color>
+    <color name="scrim">#99000000</color>
+    <color name="accent_default">#FF9A9AB0</color>
+</resources>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two stacked screens inside one page: home (0-540dp) and apps (540-1080dp).
+     Pressing Down from the dock slides the page up to reveal the apps grid. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/black">
+
+    <ImageView
+        android:id="@+id/wallpaper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
+
+    <View
+        android:id="@+id/scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/scrim"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:id="@+id/page"
+        android:layout_width="match_parent"
+        android:layout_height="1080dp"
+        android:clipChildren="false">
+
+        <dev.glasshome.launcher.GlowView
+            android:id="@+id/glow"
+            android:layout_width="760dp"
+            android:layout_height="340dp"
+            android:layout_marginStart="-110dp"
+            android:layout_marginTop="120dp" />
+
+        <View
+            android:id="@+id/dock_band"
+            android:layout_width="880dp"
+            android:layout_height="168dp"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="340dp"
+            android:background="@drawable/band_bg" />
+
+        <dev.glasshome.launcher.HighlightView
+            android:id="@+id/highlight"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="44dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/greeting"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_secondary"
+                android:textSize="15sp" />
+
+            <TextClock
+                android:id="@+id/clock"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:format12Hour="h:mm"
+                android:format24Hour="HH:mm"
+                android:includeFontPadding="false"
+                android:textColor="@color/text_primary"
+                android:textSize="76sp" />
+
+            <TextClock
+                android:id="@+id/date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:format12Hour="EEEE, d MMMM"
+                android:format24Hour="EEEE, d MMMM"
+                android:textColor="@color/text_secondary"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="46dp"
+            android:layout_marginEnd="70dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/pill_inputs"
+                style="@style/Pill"
+                android:drawableStart="@drawable/ic_input"
+                android:text="@string/inputs" />
+
+            <TextView
+                android:id="@+id/pill_wifi"
+                style="@style/Pill"
+                android:layout_marginStart="12dp"
+                android:drawableStart="@drawable/ic_wifi"
+                android:text="@string/wifi" />
+
+            <TextView
+                android:id="@+id/pill_settings"
+                style="@style/Pill"
+                android:layout_marginStart="12dp"
+                android:drawableStart="@drawable/ic_settings"
+                android:text="@string/settings" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_width="800dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="262dp"
+            android:ellipsize="end"
+            android:includeFontPadding="false"
+            android:singleLine="true"
+            android:textColor="@color/text_primary"
+            android:textSize="46sp" />
+
+        <LinearLayout
+            android:id="@+id/dock_row"
+            android:layout_width="848dp"
+            android:layout_height="@dimen/tile_slot_height"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="348dp"
+            android:orientation="horizontal" />
+
+        <TextView
+            android:id="@+id/apps_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="582dp"
+            android:text="@string/apps"
+            android:textColor="@color/text_primary"
+            android:textSize="24sp" />
+
+        <TextClock
+            android:id="@+id/apps_clock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="588dp"
+            android:layout_marginEnd="70dp"
+            android:format12Hour="h:mm"
+            android:format24Hour="HH:mm"
+            android:textColor="@color/text_secondary"
+            android:textSize="18sp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/grid"
+            android:layout_width="848dp"
+            android:layout_height="444dp"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="636dp"
+            android:clipToPadding="false"
+            android:descendantFocusability="blocksDescendants"
+            android:focusable="false"
+            android:overScrollMode="never"
+            android:paddingBottom="24dp" />
+    </FrameLayout>
+</FrameLayout>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The UI is laid out for a 960 x 540 dp screen (1920 x 1080 px at 320 dpi). -->
+    <dimen name="tile_slot_width">212dp</dimen>
+    <dimen name="tile_slot_height">150dp</dimen>
+    <dimen name="tile_width">184dp</dimen>
+    <dimen name="tile_height">104dp</dimen>
+    <dimen name="tile_radius">12dp</dimen>
+    <dimen name="tile_top">12dp</dimen>
+    <dimen name="pill_height">36dp</dimen>
+    <dimen name="apps_offset">540dp</dimen>
+    <dimen name="menu_width">240dp</dimen>
+</resources>
