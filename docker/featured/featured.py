@@ -25,6 +25,7 @@ Blending, so the cut-out looks like it stands in front of the picture rather tha
 """
 import argparse
 import datetime
+import http.client
 import io
 import json
 import os
@@ -80,9 +81,13 @@ class Tmdb:
                     time.sleep(2 + attempt * 2)
                     continue
                 raise
-            except urllib.error.URLError:
+            except NETWORK_ERRORS:  # dropped or reset connections: try again
                 time.sleep(2 + attempt * 2)
         raise RuntimeError("TMDB did not answer: " + path)
+
+
+# Connection problems worth a retry (HTTP errors with a status code are handled separately).
+NETWORK_ERRORS = (urllib.error.URLError, http.client.HTTPException, OSError)
 
 
 def app_providers(tmdb, region):
@@ -152,8 +157,16 @@ def describe(tmdb, media, ident):
 
 def download(url):
     req = urllib.request.Request(url, headers={"User-Agent": "glass-home-featured/1"})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        return Image.open(io.BytesIO(r.read())).convert("RGB")
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                return Image.open(io.BytesIO(r.read())).convert("RGB")
+        except urllib.error.HTTPError:
+            raise
+        except NETWORK_ERRORS:
+            if attempt == 3:
+                raise
+            time.sleep(2 + attempt * 2)
 
 
 # ----------------------------------------------------------------------------- matting
@@ -424,7 +437,11 @@ def app_titles(tmdb, matter, staging, region, media, count, provider_ids, label,
             break
         key = f"{media}-{ident}"
         if key not in built:
-            info = describe(tmdb, media, ident)
+            try:
+                info = describe(tmdb, media, ident)
+            except (RuntimeError,) + NETWORK_ERRORS as e:  # one title must not stop the rest
+                print(f"  {label} {noun} {ident}: no answer from TMDB ({e}); skipped", flush=True)
+                continue
             if info is None:
                 built[key] = None  # no textless artwork
                 continue
@@ -484,8 +501,12 @@ def main():
         built = {}
         for package, label, ids in apps:
             print(f"{label} (TMDB provider {', '.join(map(str, ids))})", flush=True)
-            films = app_titles(tmdb, matter, staging, args.region, "movie", args.films, ids, label, built)
-            series = app_titles(tmdb, matter, staging, args.region, "tv", args.series, ids, label, built)
+            try:
+                films = app_titles(tmdb, matter, staging, args.region, "movie", args.films, ids, label, built)
+                series = app_titles(tmdb, matter, staging, args.region, "tv", args.series, ids, label, built)
+            except (RuntimeError,) + NETWORK_ERRORS as e:  # keep the other apps' titles
+                print(f"  {label}: no answer from TMDB ({e}); this app is skipped this time", flush=True)
+                continue
             print(f"  {len(films)} films, {len(series)} series", flush=True)
             items.extend({**t, "provider": label, "package": package} for t in interleave(films, series))
 
