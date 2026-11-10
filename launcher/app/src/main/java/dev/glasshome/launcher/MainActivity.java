@@ -124,6 +124,7 @@ public final class MainActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (ACTION_REFRESH.equals(action)) {
+                updateGreeting(); // the name may have changed (scripts/set-name.ps1)
                 loadWallpaper();
                 reloadApps();
                 featured.reload(() -> applyStyle(Prefs.style(MainActivity.this)));
