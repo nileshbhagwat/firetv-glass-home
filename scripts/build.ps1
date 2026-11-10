@@ -12,7 +12,8 @@ if (-not (Test-Path $keystore)) {
     -keyalg RSA -keysize 2048 -validity 10000 -dname 'CN=Android Debug,O=Android,C=US' | Out-Null
 }
 Push-Location $launcher
-try { & gradle --console=plain assembleDebug; if ($LASTEXITCODE -ne 0) { throw "Gradle build failed" } }
+# --no-daemon: no Gradle process is left running (and holding memory) after the build.
+try { & gradle --no-daemon --console=plain assembleDebug; if ($LASTEXITCODE -ne 0) { throw "Gradle build failed" } }
 finally { Pop-Location }
 New-Item -ItemType Directory -Force (Join-Path $root 'dist') | Out-Null
 Copy-Item (Join-Path $launcher 'app\build\outputs\apk\debug\app-debug.apk') (Join-Path $root 'dist\glass-home-debug.apk') -Force
