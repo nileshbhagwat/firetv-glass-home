@@ -24,11 +24,16 @@ RUN curl -fsSL -o /tmp/clt.zip https://dl.google.com/android/repository/${CMDLIN
  && mv /tmp/clt/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest \
  && rm -rf /tmp/clt /tmp/clt.zip
 
-# sdkmanager requires accepting the Android SDK License Agreement (accepted by the
-# project owner, see SETUP.md). sdkmanager verifies each package's checksum itself.
-RUN yes | sdkmanager --licenses > /dev/null \
- && sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" \
- && sdkmanager --list_installed
+# The command-line tools ship the Android CLI ("android"); sdkmanager is a deprecated wrapper
+# that cannot turn off the CLI's usage metrics, so --no-metrics is passed to every call.
+# Installing the packages requires accepting the Android SDK License Agreement (accepted by
+# the project owner, see SETUP.md). The CLI verifies each package's checksum itself.
+RUN yes | android --no-metrics --sdk=${ANDROID_HOME} sdk install \
+        platforms/android-34 build-tools/34.0.0 platform-tools \
+ && android --no-metrics --sdk=${ANDROID_HOME} sdk list \
+ && test -d ${ANDROID_HOME}/platforms/android-34 \
+ && test -d ${ANDROID_HOME}/build-tools/34.0.0 \
+ && echo "metrics queued: $(find /root/.android/cli/analytics -type f 2>/dev/null | wc -l)"
 
 # Gradle, verified against the SHA-256 published on services.gradle.org
 RUN curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-bin.zip \

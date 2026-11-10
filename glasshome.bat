@@ -3,7 +3,7 @@ setlocal
 rem One-click build and install of Glass Home using Docker Desktop.
 rem The TV address is read from tv.env (TV_IP=...).
 cd /d "%~dp0"
-set "IMAGE=glasshome-builder:1"
+set "IMAGE=glasshome-builder:2"
 
 if not exist tv.env copy tv.env.example tv.env >nul
 set "TV_IP="
