@@ -63,7 +63,9 @@ Fire OS always sends the Home button to Amazon's own launcher, and that launcher
 protected: it cannot be disabled and the standard "default home app" setting is ignored.
 Glass Home therefore includes a small accessibility service, *Glass Home: Home button*.
 When Amazon's home screen stays in front, the service opens Glass Home. Amazon's screen is
-visible for roughly a third of a second.
+visible for roughly a third of a second. After the TV restarts, Amazon's home screen stays
+for about four seconds, until Android has started the service; Glass Home then takes over
+on its own.
 
 Fire TV's Settings screens pass through Amazon's home screen on the way in; the service
 recognises this and leaves Settings open. The service only reacts to window changes and does
