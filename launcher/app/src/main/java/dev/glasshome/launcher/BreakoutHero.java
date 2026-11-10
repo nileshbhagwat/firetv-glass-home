@@ -50,7 +50,7 @@ final class BreakoutHero extends HeroView {
         cardWidth = dp(313);
         cardHeight = dp(176);
         left = dp(578);
-        top = dp(160);
+        top = dp(164);
     }
 
     @Override

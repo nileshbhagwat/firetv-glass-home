@@ -36,8 +36,9 @@ final class RingHero extends HeroView {
         super(context);
         cardWidth = dp(212);
         cardHeight = dp(119);
-        centerX = dp(480);
-        centerY = dp(224);
+        // Right of centre and high enough that the clock, the title and the dock all stay clear.
+        centerX = dp(548);
+        centerY = dp(206);
         radius = dp(300);
         perspective = dp(1100);
     }
@@ -71,11 +72,11 @@ final class RingHero extends HeroView {
             cards.add(card);
             arts.add(art);
         }
-        block = new TitleBlock(getContext(), 26, Gravity.CENTER_HORIZONTAL, dp(620));
-        LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.CENTER_HORIZONTAL);
-        lp.topMargin = dp(298);
-        addView(block, lp);
+        block = new TitleBlock(getContext(), 26, Gravity.CENTER_HORIZONTAL, dp(560));
+        FrameLayout centred = new FrameLayout(getContext());
+        centred.addView(block, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT,
+                Gravity.TOP | Gravity.CENTER_HORIZONTAL));
+        addView(centred, at(centerX - dp(300), dp(280), dp(600), LayoutParams.WRAP_CONTENT));
         block.set(current(), false);
         position = index;
         target = index;

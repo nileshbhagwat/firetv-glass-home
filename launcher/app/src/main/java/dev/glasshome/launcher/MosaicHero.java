@@ -41,10 +41,11 @@ final class MosaicHero extends HeroView {
 
     MosaicHero(Context context) {
         super(context);
-        frameWidth = dp(356);
-        frameHeight = dp(200);
-        left = dp(536);
-        top = dp(140);
+        // Low and small enough that a character rising out of it stays below the top pills.
+        frameWidth = dp(302);
+        frameHeight = dp(170);
+        left = dp(588);
+        top = dp(166);
         gap = dp(6);
     }
 
