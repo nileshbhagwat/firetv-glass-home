@@ -101,6 +101,7 @@ final class InputsMenu {
                 Intent intent = new Intent(Intent.ACTION_VIEW,
                         TvContract.buildChannelUriForPassthroughInput(info.getId()))
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                preferLiveTvPlayer(intent);
                 items.add(new Item(label, intent));
             }
         }
@@ -127,6 +128,17 @@ final class InputsMenu {
                 return 2;
             default:
                 return Integer.MAX_VALUE;
+        }
+    }
+
+    /**
+     * Several apps accept input-switch requests on this TV (Amazon's Live TV player and a
+     * broadcast app), which would show a chooser. Send them straight to Amazon's player.
+     */
+    private void preferLiveTvPlayer(Intent intent) {
+        Intent probe = new Intent(intent).setPackage(LIVE_TV_PACKAGE);
+        if (!activity.getPackageManager().queryIntentActivities(probe, 0).isEmpty()) {
+            intent.setPackage(LIVE_TV_PACKAGE);
         }
     }
 
