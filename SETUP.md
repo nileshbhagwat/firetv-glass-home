@@ -74,8 +74,10 @@ Every file downloaded for this project, with its source and checksum.
 
 ### Docker image `glasshome-builder:2`
 
-Image ID `sha256:ae9cebeb596410bf038af158b959720e1a8aaf19eb187ad937ae830aea76afbe`,
-2.16 GB in Docker Desktop's image store.
+Image ID `sha256:cfd2c3271b7e45dad32a989a83f4b9eb049d4a0d3df95abdea3d28ae1eb03762`,
+2.16 GB in Docker Desktop's image store. The SDK packages are installed with
+`android --no-metrics`; the image contains no Android CLI analytics state. An earlier image,
+`glasshome-builder:1`, used `sdkmanager` and can be removed with `docker rmi glasshome-builder:1`.
 
 | Item | Source | Size | Checksum |
 | --- | --- | --- | --- |
