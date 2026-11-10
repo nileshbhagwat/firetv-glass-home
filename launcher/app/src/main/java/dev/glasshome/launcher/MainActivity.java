@@ -166,9 +166,10 @@ public final class MainActivity extends Activity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        // Home pressed while already home: return to the dock, keeping the remembered tile.
         inputsMenu.dismiss();
-        if (!dockApps.isEmpty()) {
+        // Home pressed while Glass Home was already in front: return to the dock (keeping the
+        // remembered dock tile). Returning from another app keeps the last focused tile.
+        if (intent.getBooleanExtra(HomeRedirectService.EXTRA_RESET_FOCUS, false) && !dockApps.isEmpty()) {
             zone = ZONE_DOCK;
         }
         applyFocus(true);
@@ -368,7 +369,7 @@ public final class MainActivity extends Activity {
             } else if (topIndex == PILL_WIFI) {
                 openSettings(Settings.ACTION_WIFI_SETTINGS);
             } else {
-                openSettings(Settings.ACTION_SETTINGS);
+                openFireTvSettings();
             }
             return;
         }
@@ -385,6 +386,17 @@ public final class MainActivity extends Activity {
             startActivity(intent);
         } catch (ActivityNotFoundException | SecurityException e) {
             Toast.makeText(this, getString(R.string.cannot_open, label), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /** Opens Fire TV's settings screen directly, avoiding a detour through Amazon's home screen. */
+    private void openFireTvSettings() {
+        try {
+            startActivity(new Intent("amazon.intent.action.MAINSETTINGS")
+                    .setPackage("com.amazon.tv.launcher")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (ActivityNotFoundException | SecurityException e) {
+            openSettings(Settings.ACTION_SETTINGS);
         }
     }
 
