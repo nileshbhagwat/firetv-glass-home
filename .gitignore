@@ -15,3 +15,9 @@ captures/
 
 # Logs
 *.log
+
+# Local signing key (created on first build)
+*.keystore
+
+# Local TV address
+/tv.env
