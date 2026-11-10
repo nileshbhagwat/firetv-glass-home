@@ -1,0 +1,17 @@
+# Local, machine-specific folders (see SETUP.md)
+/tools/
+/backup/
+/shots/
+/dist/
+
+# Android / Gradle build output
+.gradle/
+.gradle-home/
+build/
+local.properties
+*.iml
+.idea/
+captures/
+
+# Logs
+*.log
