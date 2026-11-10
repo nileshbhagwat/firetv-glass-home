@@ -129,14 +129,26 @@ Packages are disabled with `pm disable-user --user 0`; nothing is uninstalled.
 | Background services | Release notes, tutorials, Early Access, set-up services for other Amazon devices |
 | Preloaded apps | Games hub, website shortcuts, Amazon Photos, European satellite operator apps, AirPlay, Alexa Smart Home, Amazon Kids, Amazon Luna, Amazon Music, Silk browser |
 | Streaming apps not in use | JioCinema, Amazon miniTV |
+| European broadcast services | Vewd HbbTV and Freeview Play, UK MHEG (not used in India) |
+| System updates | Update helpers; Fire OS no longer installs new versions, so the setup stays as it is |
+| Amazon extras | Amazon screensaver (the basic Android screensaver takes over), Hedwig notification service |
+| Casting and mirroring | Casting from phone apps (YouTube, Netflix, Prime Video) and screen mirroring |
+| Alexa and smart home | Alexa voice search, alerts and calling, Matter smart-home services |
 
-Fire OS protects a few telemetry packages from being disabled (device metrics, crash
-manager, log manager, usage statistics, ad deep-linking). These are blocked from running in
-the background instead.
+In total 60 packages are disabled. Fire OS protects a few packages from being disabled
+(device metrics, crash manager, log manager, usage statistics, ad deep-linking, the two OTA
+update services and the help app). These are blocked from running in the background instead.
+
+What this means in daily use:
+
+- The remote's microphone button no longer works (Alexa is off).
+- Phones cannot cast to the TV or mirror their screen.
+- Fire OS does not update itself, which also means no new security patches. To allow updates
+  again, remove the "System updates" lines from the list and re-enable the packages
+  (see below).
 
 Deliberately kept: remote pairing, keyboard, HDMI and Live TV services, Wi-Fi, the Appstore
-and app sign-in, Alexa voice search, casting from phone apps, screen mirroring and system
-updates.
+and app sign-in, and the system help pages in Settings.
 
 ### Re-enable a single app
 
