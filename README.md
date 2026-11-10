@@ -152,13 +152,14 @@ The featured styles need titles, which are prepared on the PC and copied to the 
 itself downloads nothing and does no image processing. `featured.bat`:
 
 1. asks [TMDB](https://www.themoviedb.org/), with its streaming-service filter for India,
-   for each dock app's most popular films (6) and series (4). TMDB's popularity score is
-   driven by each day's views, votes and watchlist additions, so what people are watching
-   now comes first; titles first released more than a year ago (two for apps with few
-   titles) are left out, so reruns and old favourites do not crowd out what is new. Only
-   artwork without text is used. Apps covered: Netflix, Prime Video, JioHotstar, Zee5 and
-   SonyLIV. The script uses TMDB's alternate address `api.tmdb.org`, because some Indian
-   internet providers block `api.themoviedb.org`;
+   for each dock app's newest popular titles: 6 films released in the last 90 days and 4
+   series with an episode in the last 60 days (so new seasons of running shows count too,
+   but not shows that started more than six years ago), ranked by TMDB's popularity, which
+   is driven by each day's views, votes and watchlist additions. Apps with too few new
+   titles are topped up from the last year. Only artwork without text is used. Apps
+   covered: Netflix, Prime Video, JioHotstar, Zee5 and SonyLIV. The script uses TMDB's
+   alternate address `api.tmdb.org`, because some Indian internet providers block
+   `api.themoviedb.org`;
 2. cuts the main character out of each picture with the ISNet background-removal model
    (on the PC's CPU, in Docker) and blends it so that it reads as a separate layer: a
    shallow depth of field behind it, cleaned edges, light wrap from the scene, a rim light

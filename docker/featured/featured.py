@@ -11,11 +11,10 @@ the laptop. On the TV, the home screen shows only the titles of the app focused 
     python featured.py --out /work/featured/out           # needs TMDB_TOKEN
     python featured.py --out /work/featured/out --demo    # generated demo artwork, no account
 
-"Popular this month" means TMDB's popularity ranking (built from each day's views, votes,
-favourites and watchlist additions, carried over from day to day; see
-developer.themoviedb.org/docs/popularity-and-trending) among films and series first released
-in the last year (two years for apps with few titles), so older favourites do not crowd out
-what is new.
+Which titles: per app, TMDB's most popular (popularity is built from each day's views, votes,
+favourites and watchlist additions; see developer.themoviedb.org/docs/popularity-and-trending)
+films released in the last 90 days and series with an episode in the last 60 days (started
+within six years), in TMDB's order. Apps with too few titles get older ones as well.
 
 Blending, so the cut-out looks like it stands in front of the picture rather than pasted on:
   * depth of field: the background plate is softened and dimmed slightly;
@@ -109,27 +108,33 @@ def app_providers(tmdb, region):
     return [(package, label, sorted(ids[package])) for _, package, label in PROVIDERS if ids[package]]
 
 
-# How far back a title may have been first released, in days: one year, widened to two for
-# apps with too few titles. Older titles are left out so that long-running reruns and old
-# favourites do not crowd out what is new.
-WINDOWS = (365, 730)
+# Look-back windows in days, newest first; a wider window is used only when an app has too
+# few titles in the narrower one.
+FILM_WINDOWS = (90, 365, 730)      # films released in the last N days
+SERIES_WINDOWS = (60, 180, 365)    # series with an episode aired in the last N days ...
+SERIES_MAX_AGE = 6 * 365           # ... that started at most this long ago (no decades-old reruns)
 
 
 def popular_ids(tmdb, media, region, provider_ids):
     """TMDB ids of one app's most popular films (media "movie") or series ("tv").
 
-    Ranked by TMDB popularity, which is driven by each day's views, votes and watchlist
-    additions, so the titles people are watching now come first. Uses TMDB's
-    streaming-service filter (watch_region + with_watch_providers), so every title streams on
-    that app in the region. A series counts from its first episode: filtering on any recent
-    episode would favour daily and weekly shows that have run for years."""
+    Uses TMDB's streaming-service filter (watch_region + with_watch_providers), so every title
+    streams on that app in the region, and ranks by TMDB popularity, which is driven by each
+    day's views, votes and watchlist additions. Films: released in the last 90 days. Series:
+    an episode aired in the last 60 days, so new seasons of running shows count too, among
+    series that started in the last six years (no decades-old reruns). Wider windows follow
+    only when an app has too few titles."""
     today = datetime.date.today()
-    date_field = "primary_release_date" if media == "movie" else "first_air_date"
     seen = set()
-    for days in WINDOWS:
+    for days in FILM_WINDOWS if media == "movie" else SERIES_WINDOWS:
+        since = (today - datetime.timedelta(days=days)).isoformat()
+        if media == "movie":
+            dates = {"primary_release_date.gte": since, "primary_release_date.lte": today.isoformat()}
+        else:
+            dates = {"air_date.gte": since, "air_date.lte": today.isoformat(),
+                     "first_air_date.gte": (today - datetime.timedelta(days=SERIES_MAX_AGE)).isoformat()}
         params = {
-            f"{date_field}.gte": (today - datetime.timedelta(days=days)).isoformat(),
-            f"{date_field}.lte": today.isoformat(),
+            **dates,
             "watch_region": region,
             "with_watch_providers": "|".join(str(i) for i in provider_ids),
             "with_watch_monetization_types": "flatrate|free|ads",
@@ -432,11 +437,14 @@ def demo_scene(spec):
 # ----------------------------------------------------------------------------- main
 
 def app_titles(tmdb, matter, staging, region, media, count, provider_ids, label, built):
-    """Up to `count` prepared films or series for one app, those with a clear character first.
+    """The app's `count` most popular new films or series, in TMDB's order.
 
-    `built` caches prepared artwork by title, so a title on two apps is processed once."""
+    A title whose artwork has no clear main character is kept and shown without the pop-out
+    effect: skipping it would hide some of the newest, most watched titles. Only titles with
+    no artwork without text are left out. `built` caches prepared artwork by title, so a title
+    on two apps is processed once."""
     noun = "film" if media == "movie" else "series"
-    chosen, spare, tries = [], [], 0
+    chosen, tries = [], 0
     for ident in popular_ids(tmdb, media, region, provider_ids):
         if len(chosen) >= count or tries >= count * 3:
             break
@@ -459,10 +467,10 @@ def app_titles(tmdb, matter, staging, region, media, count, provider_ids, label,
                 built[key] = None
                 continue
             if "cardChar" not in built[key]:
-                print("    no clear character; kept as a spare", flush=True)
+                print("    no clear character; shown without the pop-out", flush=True)
         if built[key] is not None:
-            (chosen if "cardChar" in built[key] else spare).append({"id": key, "kind": media, **built[key]})
-    return chosen + spare[:max(0, count - len(chosen))]
+            chosen.append({"id": key, "kind": media, **built[key]})
+    return chosen
 
 
 def interleave(films, series):
