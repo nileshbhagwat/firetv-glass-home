@@ -1,9 +1,10 @@
 # Setup
 
-This project keeps its toolchain inside the project folder or inside Docker. Nothing is
-installed globally on the host apart from Docker Desktop, which was already present.
+This project keeps its toolchain inside the project folder, inside Docker, or in mise's
+per-version tool store. The only global installs are Docker Desktop (Option A) and mise
+(Option B).
 
-- **Option A, Docker** (default, used for every build so far): one click with `glasshome.bat`.
+- **Option A, Docker** (default): one click with `glasshome.bat`.
 - **Option B, mise**: build directly on Windows with tools pinned in `mise.toml`.
 
 Both options produce `dist/glass-home-debug.apk`.
@@ -36,23 +37,23 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle glasshome-buil
 docker run --rm -v "%CD%:/work" -v "%USERPROFILE%\.android:/root/.android" glasshome-builder:1 sh /work/docker/install.sh 192.168.1.50
 ```
 
-## Option B: mise
+## Option B: mise, step by step
 
-Status: prepared but not yet run on this machine (mise is not installed). Docker is the tested
-path.
+Tested on this machine: the build takes about three minutes and the APK carries the same
+signing certificate as the Docker build, so either can update the installed app.
 
-```powershell
-winget install jdx.mise        # one-time; the only global install for this option
-mise trust
-mise install                   # Temurin JDK 17 and Gradle 8.10.2, pinned in mise.toml
-mise run sdk                   # Android SDK into tools\android-sdk (accepts the SDK licence)
-mise run build                 # dist\glass-home-debug.apk
-mise run install               # install on the TV using tools\platform-tools\adb.exe
-```
+| Step | Command | What it does |
+| --- | --- | --- |
+| 1. mise | `winget install jdx.mise` | One-time; the only global install. Open a new terminal afterwards |
+| 2. Trust | `mise trust` | Lets mise read this project's `mise.toml` |
+| 3. Java and Gradle | `mise install` | Temurin JDK 17.0.21 and Gradle 8.10.2 (about 320 MB, kept by mise per version) |
+| 4. Android SDK | `mise run sdk` | Platform 34, build tools 34.0.0 and platform-tools into `tools\android-sdk` (about 450 MB), with usage metrics off |
+| 5. adb | `powershell -ExecutionPolicy Bypass -File scripts\get-adb.ps1` | Only needed if `tools\platform-tools` is missing |
+| 6. Build | `mise run build` | Produces `dist\glass-home-debug.apk`; the first build downloads about 350 MB of Gradle libraries into `.gradle-home` |
+| 7. Install | `mise run install` | Installs on the TV at the address in `tv.env` |
 
 `mise.toml` points `ANDROID_HOME` at `tools/android-sdk` and `GRADLE_USER_HOME` at
-`.gradle-home`, both inside the project. Run `scripts\get-adb.ps1` first if
-`tools\platform-tools` does not exist.
+`.gradle-home`, both inside the project.
 
 ## Downloads
 
@@ -109,17 +110,44 @@ To list the resolved versions again:
 docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launcher glasshome-builder:1 gradle -q :app:dependencies --configuration debugRuntimeClasspath
 ```
 
+### mise build (Option B)
+
+| Item | Source | Size | Location |
+| --- | --- | --- | --- |
+| mise 2026.11.2 (`mise-v2026.11.2-windows-x64.zip`) | winget package `jdx.mise`, from `github.com/jdx/mise` releases | 81.6 MB | Installed by the project owner |
+| Temurin JDK 17.0.21+9 (`OpenJDK17U-jdk_x64_windows_hotspot_17.0.21_9.zip`) | Eclipse Adoptium, via mise | 191.1 MB | `%LOCALAPPDATA%\mise\installs\java` |
+| Gradle 8.10.2 (`gradle-8.10.2-bin.zip`) | `services.gradle.org`, via mise | 130.4 MB | `%LOCALAPPDATA%\mise\installs\gradle` |
+| Android command-line tools `commandlinetools-win-16111833_latest.zip` | `https://dl.google.com/android/repository/` | 147.8 MB | `tools\android-sdk\cmdline-tools` |
+| Platform 34, build tools 34.0.0, platform-tools 37.0.1 (Windows) | Google, via the Android CLI and the Android Gradle Plugin | about 130 MB | `tools\android-sdk` |
+| Android Gradle Plugin 8.7.3 and the app libraries listed above | Google Maven and Maven Central, via Gradle | 344 MB | `.gradle-home` |
+
 ## Licences accepted
 
 - **Android SDK License Agreement**: accepted through `sdkmanager --licenses` while building the
   Docker image, with the project owner's approval, on 10 November 2026. Option B accepts the
   same licence when `mise run sdk` runs `scripts/setup-sdk.ps1`.
 
+## Usage metrics
+
+- **Android CLI.** Since command-line tools 16111833 the SDK tools are the Android CLI
+  (`android`, version 1.1.16717390), which collects usage metrics by default. `sdkmanager` is
+  now a deprecated wrapper around it and cannot turn this off, so `scripts\setup-sdk.ps1`
+  calls `android --no-metrics` for every command.
+- **Before the switch.** The Docker image build and the first `mise run sdk` used
+  `sdkmanager` with metrics on; one upload from the laptop took place on 10 November 2026.
+  The three reports still queued in `%USERPROFILE%\.android\cli\analytics\metrics\spool`
+  were deleted the same day. The Dockerfile still calls `sdkmanager`; this only matters when
+  the image is rebuilt.
+- **Android Studio and Gradle plugin analytics** are off:
+  `%USERPROFILE%\.android\analytics.settings` contains `"hasOptedIn": false`.
+
 ## Files outside the project folder
 
 | Location | Created by | Purpose |
 | --- | --- | --- |
 | `%USERPROFILE%\.android\adbkey`, `adbkey.pub` | adb | Key that the TV authorised with *Always allow from this computer* |
+| `%USERPROFILE%\.android\bin\android-cli.exe`, `%USERPROFILE%\.android\cli\`, `%USERPROFILE%\.android\cache\` | Android CLI | CLI binary, its state and repository cache |
+| `%LOCALAPPDATA%\mise\installs\java`, `...\gradle` | mise | Java 17 and Gradle 8.10.2 for Option B |
 | Docker image `glasshome-builder:1` | `glasshome.bat` | Build toolchain |
 | Docker volume `glasshome-gradle` | `glasshome.bat` | Gradle download cache |
 
@@ -128,7 +156,8 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launc
 ```bat
 docker rmi glasshome-builder:1
 docker volume rm glasshome-gradle
-rmdir /s /q tools dist launcher\.gradle launcher\app\build launcher\build
+rmdir /s /q tools dist .gradle-home launcher\.gradle launcher\app\build launcher\build
+mise uninstall java@temurin-17.0.21+9 gradle@8.10.2
 ```
 
 To stop the PC being trusted by the TV, delete `%USERPROFILE%\.android\adbkey*` and turn
