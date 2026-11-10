@@ -3,6 +3,7 @@ package dev.glasshome.launcher;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -403,6 +404,19 @@ public final class MainActivity extends Activity {
 
     /** Opens Fire TV's settings screen directly, avoiding a detour through Amazon's home screen. */
     private void openFireTvSettings() {
+        try {
+            // Opened directly and in its own task: no detour through Amazon's home screen on the
+            // way in, and Back from Settings returns straight to Glass Home.
+            startActivity(new Intent(Intent.ACTION_MAIN)
+                    .setComponent(new ComponentName("com.amazon.tv.launcher",
+                            "com.amazon.tv.launcher.ui.MainSettingsActivity"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_NEW_DOCUMENT
+                            | Intent.FLAG_ACTIVITY_MULTIPLE_TASK));
+            return;
+        } catch (ActivityNotFoundException | SecurityException e) {
+            // Fall through to the generic settings request below.
+        }
         try {
             startActivity(new Intent("amazon.intent.action.MAINSETTINGS")
                     .setPackage("com.amazon.tv.launcher")
