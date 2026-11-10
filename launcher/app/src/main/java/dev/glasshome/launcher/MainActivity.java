@@ -157,6 +157,9 @@ public final class MainActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // The layout paints its own black background, so the window's would only be painted
+        // over: on the TV every full-screen layer costs about 9 ms of a 16 ms frame.
+        getWindow().setBackgroundDrawable(null);
         page = findViewById(R.id.page);
         highlight = findViewById(R.id.highlight);
         glow = findViewById(R.id.glow);
