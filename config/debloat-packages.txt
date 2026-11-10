@@ -51,3 +51,12 @@ com.amazon.cloud9
 # Streaming apps not in use
 com.jio.media.stb.ondemand
 com.amazon.minitv.android.app
+
+# European broadcast services (HbbTV, Freeview Play, UK MHEG); not used in India
+com.vewd.core.fvpplayer
+com.vewd.core.opapp
+com.vewd.core.service
+com.vewd.core.tis
+com.vewd.core.tvapp
+org.obs.mhegservice
+com.amazon.fvpsupport
