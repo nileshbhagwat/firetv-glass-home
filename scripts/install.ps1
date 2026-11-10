@@ -26,6 +26,7 @@ $apk = Join-Path $root 'dist\glass-home-debug.apk'
 if (-not (Test-Path $apk)) { throw "Missing $apk. Build first." }
 
 function Connect-Tv {
+  $ErrorActionPreference = 'Continue'  # adb writes status to stderr; never treat it as fatal
   for ($i = 0; $i -lt 8; $i++) {
     if ((& $adb -s $Device get-state 2>&1) -match '^device') { return }
     & $adb disconnect $Device 2>&1 | Out-Null
@@ -35,7 +36,11 @@ function Connect-Tv {
   throw "Cannot reach $Device. Is ADB debugging on? (Fire OS turns it off when the TV restarts.)"
 }
 # The Wi-Fi link can drop briefly, so every call reconnects first.
-function Tv { Connect-Tv; & $adb -s $Device @args 2>&1 }
+function Tv {
+  $ErrorActionPreference = 'Continue'  # adb writes status to stderr; never treat it as fatal
+  Connect-Tv
+  & $adb -s $Device @args 2>&1 | ForEach-Object { "$_" }
+}
 
 Write-Host "Installing $apk"
 Tv install -r $apk | Out-Host
