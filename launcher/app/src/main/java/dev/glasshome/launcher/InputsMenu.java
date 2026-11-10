@@ -6,11 +6,11 @@ import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.media.tv.TvContract;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvInputManager;
 import android.text.TextUtils;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,12 +21,19 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Compact glass dropdown under the Inputs pill: HDMI ports, AV and Live TV. */
+/**
+ * Compact glass dropdown under the Inputs pill: HDMI ports, AV and Live TV.
+ * The popup never takes key focus; MainActivity forwards the remote's keys to it, so every
+ * press is handled even while the popup window is still appearing.
+ */
 final class InputsMenu {
     private static final String LIVE_TV_PACKAGE = "com.amazon.tv.livetv";
 
     private final MainActivity activity;
+    private final List<Item> items = new ArrayList<>();
+    private final List<View> rows = new ArrayList<>();
     private PopupWindow popup;
+    private int selected;
 
     InputsMenu(MainActivity activity) {
         this.activity = activity;
@@ -46,7 +53,9 @@ final class InputsMenu {
         dismiss();
         LayoutInflater inflater = LayoutInflater.from(activity);
         LinearLayout list = (LinearLayout) inflater.inflate(R.layout.menu_inputs, null, false);
-        List<Item> items = loadItems();
+        items.clear();
+        items.addAll(loadItems());
+        rows.clear();
         if (items.isEmpty()) {
             TextView empty = (TextView) inflater.inflate(R.layout.item_input, list, false);
             empty.setText(R.string.no_inputs);
@@ -57,16 +66,15 @@ final class InputsMenu {
             TextView row = (TextView) inflater.inflate(R.layout.item_input, list, false);
             row.setText(item.label);
             row.setTypeface(Fonts.outfit(activity, 400));
-            row.setOnClickListener(v -> {
-                dismiss();
-                activity.launch(item.intent, item.label);
-            });
             list.addView(row);
+            rows.add(row);
         }
+        selected = 0;
+        updateSelection();
+
         int width = activity.getResources().getDimensionPixelSize(R.dimen.menu_width);
-        popup = new PopupWindow(list, width, ViewGroup.LayoutParams.WRAP_CONTENT, true);
+        popup = new PopupWindow(list, width, ViewGroup.LayoutParams.WRAP_CONTENT, false);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        popup.setOutsideTouchable(true);
         popup.setAnimationStyle(android.R.style.Animation_Dialog);
 
         int[] location = new int[2];
@@ -75,8 +83,52 @@ final class InputsMenu {
         int x = location[0] + anchor.getWidth() - width;
         int y = location[1] + anchor.getHeight() + gap;
         popup.showAtLocation(anchor.getRootView(), Gravity.TOP | Gravity.START, x, y);
-        if (list.getChildCount() > 0) {
-            list.getChildAt(0).requestFocus();
+    }
+
+    /** Handles a remote key while the menu is open. Returns true when the key was consumed. */
+    boolean handleKey(KeyEvent event) {
+        boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
+        switch (event.getKeyCode()) {
+            case KeyEvent.KEYCODE_DPAD_UP:
+                if (down && selected > 0) {
+                    selected--;
+                    updateSelection();
+                }
+                return true;
+            case KeyEvent.KEYCODE_DPAD_DOWN:
+                if (down && selected < rows.size() - 1) {
+                    selected++;
+                    updateSelection();
+                }
+                return true;
+            case KeyEvent.KEYCODE_DPAD_LEFT:
+            case KeyEvent.KEYCODE_DPAD_RIGHT:
+                return true;
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+            case KeyEvent.KEYCODE_ENTER:
+            case KeyEvent.KEYCODE_NUMPAD_ENTER:
+            case KeyEvent.KEYCODE_BUTTON_A:
+                if (down && event.getRepeatCount() == 0) {
+                    dismiss();
+                    if (selected >= 0 && selected < items.size()) {
+                        Item item = items.get(selected);
+                        activity.launch(item.intent, item.label);
+                    }
+                }
+                return true;
+            case KeyEvent.KEYCODE_BACK:
+                if (down) {
+                    dismiss();
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void updateSelection() {
+        for (int i = 0; i < rows.size(); i++) {
+            rows.get(i).setSelected(i == selected);
         }
     }
 
@@ -98,10 +150,11 @@ final class InputsMenu {
                             ? activity.getString(R.string.input_av)
                             : info.loadLabel(activity);
                 }
-                Intent intent = new Intent(Intent.ACTION_VIEW,
-                        TvContract.buildChannelUriForPassthroughInput(info.getId()))
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                preferLiveTvPlayer(intent);
+                // Fire OS reserves its own input player for Amazon apps (TUNE_INPUT permission),
+                // so inputs are shown by Glass Home's own player through the TV input framework.
+                Intent intent = new Intent(activity, InputPlayerActivity.class)
+                        .putExtra(InputPlayerActivity.EXTRA_INPUT_ID, info.getId())
+                        .putExtra(InputPlayerActivity.EXTRA_LABEL, label.toString());
                 items.add(new Item(label, intent));
             }
         }
@@ -128,17 +181,6 @@ final class InputsMenu {
                 return 2;
             default:
                 return Integer.MAX_VALUE;
-        }
-    }
-
-    /**
-     * Several apps accept input-switch requests on this TV (Amazon's Live TV player and a
-     * broadcast app), which would show a chooser. Send them straight to Amazon's player.
-     */
-    private void preferLiveTvPlayer(Intent intent) {
-        Intent probe = new Intent(intent).setPackage(LIVE_TV_PACKAGE);
-        if (!activity.getPackageManager().queryIntentActivities(probe, 0).isEmpty()) {
-            intent.setPackage(LIVE_TV_PACKAGE);
         }
     }
 

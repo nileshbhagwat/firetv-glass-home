@@ -54,6 +54,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".InputPlayerActivity"
+            android:configChanges="keyboard|keyboardHidden|navigation|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:screenOrientation="landscape" />
+
         <!-- Configuration over ADB only: android.permission.DUMP is held by the shell, not by apps. -->
         <receiver
             android:name=".ConfigReceiver"

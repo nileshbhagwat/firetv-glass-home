@@ -190,6 +190,16 @@ public final class MainActivity extends Activity {
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+        if (android.util.Log.isLoggable("GlassHome", android.util.Log.DEBUG)) {
+            android.util.Log.d("GlassHome", "key " + KeyEvent.keyCodeToString(event.getKeyCode())
+                    + (event.getAction() == KeyEvent.ACTION_DOWN ? " down" : " up")
+                    + " zone=" + zone + " menu=" + inputsMenu.isShowing());
+        }
+        // While the Inputs menu is open it receives the remote's keys from here (it never
+        // takes window focus itself), so no press is lost while the popup is appearing.
+        if (inputsMenu.isShowing() && inputsMenu.handleKey(event)) {
+            return true;
+        }
         boolean down = event.getAction() == KeyEvent.ACTION_DOWN;
         switch (event.getKeyCode()) {
             case KeyEvent.KEYCODE_DPAD_UP:

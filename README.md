@@ -52,8 +52,11 @@ file that is downloaded.
 | Back | Return to the dock |
 | Home | Return to Glass Home; pressing Home on Glass Home returns to the dock |
 
-- **Inputs** lists the HDMI ports, AV and Live TV, and switches through the Android TV input
-  framework.
+- **Inputs** lists the HDMI ports, AV and Live TV. Fire OS reserves its own input player for
+  Amazon-signed apps, so HDMI and AV open in Glass Home's own full-screen player through the
+  Android TV input framework; it shows "No signal" when nothing is connected. Back or Home
+  returns to the launcher. Live TV opens Amazon's Live TV guide. (The picture itself has not
+  yet been checked with a device connected.)
 - **Wi-Fi** shows the connected network and opens the network settings.
 - **Settings** opens the Fire TV settings.
 
