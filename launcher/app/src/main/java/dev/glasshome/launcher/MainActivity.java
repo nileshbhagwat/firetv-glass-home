@@ -464,7 +464,7 @@ public final class MainActivity extends Activity {
     }
 
     private void loadWallpaper() {
-        final File dir = getExternalFilesDir(null);
+        final File dir = getFilesDir(); // written by scripts/set-wallpaper.ps1
         loader.execute(() -> {
             Bitmap bitmap = null;
             if (dir != null) {
