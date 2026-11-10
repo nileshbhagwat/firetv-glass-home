@@ -16,6 +16,9 @@
     <string name="style_depth">Depth clock</string>
     <string name="style_breakout">Break-out card</string>
     <string name="style_mosaic">Glass mosaic</string>
+    <string name="style_cinema">Cinema</string>
+    <string name="style_spotlight">Spotlight</string>
+    <string name="style_aura">Aura</string>
     <string name="featured_caption_film">Popular film on %1$s</string>
     <string name="featured_caption_series">Popular series on %1$s</string>
     <string name="featured_popular">Popular this month</string>

@@ -15,12 +15,16 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 - All other apps in a four-column grid that slides up when you press Down.
 - One translucent glass highlight that springs from item to item; the focused tile lifts
   towards you in 3D, catches a brief light sheen and shows its name underneath.
-- Five home styles, chosen with the remote's Menu button: Classic, and four styles that show
-  the focused app's most popular titles this month, with the main character cut out so that
-  it stands in front of the screen: **Gallery ring** (a turning 3D ring of glass cards),
+- Eight home styles, chosen with the remote's Menu button: Classic, and seven styles that
+  show the focused app's newest popular titles, with the main character cut out so that it
+  stands in front of the screen: **Gallery ring** (a turning 3D ring of glass cards),
   **Depth clock** (the character stands in front of a large clock), **Break-out card** (the
-  character climbs out of a tilting glass card) and **Glass mosaic** (the artwork splits into
-  breathing glass tiles).
+  character climbs out of a tilting glass card), **Glass mosaic** (the artwork splits into
+  breathing glass tiles), and three full-screen styles without frames: **Cinema** (the
+  camera slowly pushes in on the character, and titles change with a dolly-through
+  dissolve), **Spotlight** (a dark stage where a soft light roams the scene while the
+  character stays lit) and **Aura** (the scene washed in one tone of the title's colour,
+  the character in full colour inside a breathing glow).
 - Deterministic D-pad navigation that remembers the last focused tile.
 - Lightweight: no blur, no video, no network polling (about 115 MB PSS on the TV).
 - Telemetry, advertising and unused preloaded apps disabled; nothing is uninstalled, and a
@@ -68,7 +72,7 @@ file that is downloaded.
 | Select | Open the focused app or pill |
 | Back | Return to the dock |
 | Home | Return to Glass Home; pressing Home on Glass Home returns to the dock |
-| Menu (three lines) | Choose the home style: Left/Right previews each style, Select keeps it, Back cancels |
+| Menu (three lines) | Choose the home style: Left/Right (and Up/Down between the two rows) previews each style, Select keeps it, Back cancels |
 
 In the featured styles, the titles are those of the app focused in the dock, and only that
 app's: focus Prime Video and the style shows Prime Video's titles. The gallery ring mixes
@@ -181,7 +185,7 @@ the titles stay as they are until the next run.
 the style from the PC, or to remove the titles:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\set-style.ps1 ring    # classic, ring, depth, breakout, mosaic
+powershell -ExecutionPolicy Bypass -File scripts\set-style.ps1 cinema  # classic, ring, depth, breakout, mosaic, cinema, spotlight, aura
 powershell -ExecutionPolicy Bypass -File scripts\push-featured.ps1 -Remove
 ```
 

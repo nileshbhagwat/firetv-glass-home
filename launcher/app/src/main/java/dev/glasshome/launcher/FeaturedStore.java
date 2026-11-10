@@ -112,6 +112,41 @@ final class FeaturedStore {
         });
     }
 
+    /**
+     * A full-screen picture for the borderless styles: the artwork at exactly width x height
+     * with their shading drawn in ({@link Shading}), prepared off the main thread.
+     */
+    void scene(String name, int width, int height, BitmapCallback callback) {
+        if (name == null) {
+            callback.onBitmap(null);
+            return;
+        }
+        final String key = "scene:" + name + '@' + width + 'x' + height;
+        Bitmap cached = cache.get(key);
+        if (cached != null) {
+            callback.onBitmap(cached);
+            return;
+        }
+        final int request = generation;
+        io.execute(() -> {
+            Bitmap source = decode(new File(dir, name), width, height, false);
+            Bitmap scene = null;
+            if (source != null) {
+                try {
+                    scene = Shading.bake(source, width, height);
+                } catch (OutOfMemoryError e) {
+                    Log.w(TAG, "Not enough memory to prepare " + name);
+                }
+                source.recycle();
+            }
+            final Bitmap result = scene;
+            main.post(() -> {
+                if (result != null && request == generation) cache.put(key, result);
+                callback.onBitmap(result);
+            });
+        });
+    }
+
     void shutdown() {
         io.shutdownNow();
         cache.evictAll();

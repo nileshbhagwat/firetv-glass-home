@@ -140,6 +140,21 @@ abstract class HeroView extends FrameLayout {
         });
     }
 
+    /** Like {@link #loadInto}, for a full-screen picture with the shading drawn in. */
+    protected final void loadSceneInto(ImageView view, String file, int width, int height, Runnable done) {
+        view.setTag(R.id.featured_file, file);
+        if (file == null) {
+            view.setImageDrawable(null);
+            if (done != null) done.run();
+            return;
+        }
+        store.scene(file, width, height, bitmap -> {
+            if (!file.equals(view.getTag(R.id.featured_file))) return;
+            view.setImageBitmap(bitmap);
+            if (done != null) done.run();
+        });
+    }
+
     /** A rounded artwork view with the glass edge and light sheen used by every style. */
     protected final ImageView artView() {
         ImageView view = new ImageView(getContext());

@@ -9,8 +9,11 @@ final class HomeStyle {
     static final String DEPTH = "depth";
     static final String BREAKOUT = "breakout";
     static final String MOSAIC = "mosaic";
+    static final String CINEMA = "cinema";
+    static final String SPOTLIGHT = "spotlight";
+    static final String AURA = "aura";
 
-    static final String[] ALL = {CLASSIC, RING, DEPTH, BREAKOUT, MOSAIC};
+    static final String[] ALL = {CLASSIC, RING, DEPTH, BREAKOUT, MOSAIC, CINEMA, SPOTLIGHT, AURA};
 
     private HomeStyle() {
     }
@@ -40,6 +43,12 @@ final class HomeStyle {
                 return R.string.style_breakout;
             case MOSAIC:
                 return R.string.style_mosaic;
+            case CINEMA:
+                return R.string.style_cinema;
+            case SPOTLIGHT:
+                return R.string.style_spotlight;
+            case AURA:
+                return R.string.style_aura;
             default:
                 return R.string.style_classic;
         }
@@ -56,6 +65,12 @@ final class HomeStyle {
                 return new BreakoutHero(context);
             case MOSAIC:
                 return new MosaicHero(context);
+            case CINEMA:
+                return new CinemaHero(context);
+            case SPOTLIGHT:
+                return new SpotlightHero(context);
+            case AURA:
+                return new AuraHero(context);
             default:
                 return null;
         }
