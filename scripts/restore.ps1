@@ -10,6 +10,8 @@
     4. Re-enables Amazon's launcher and makes it the default home again.
     5. Uninstalls the Glass Home launcher (skip with -KeepLauncher).
 
+  The TV address comes from tv.env (TV_IP=...) unless -Device is given.
+
   Usage (from the project folder):
     powershell -ExecutionPolicy Bypass -File scripts\restore.ps1
     powershell -ExecutionPolicy Bypass -File scripts\restore.ps1 -Device 192.168.1.50:5555 -KeepLauncher
@@ -17,7 +19,7 @@
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
-  [string]$Device = '192.168.1.50:5555',
+  [string]$Device,
   [string]$BackupDir,
   [switch]$KeepLauncher
 )
@@ -25,6 +27,12 @@ param(
 $root = Split-Path -Parent $PSScriptRoot
 $adb = Join-Path $root 'tools\platform-tools\adb.exe'
 if (-not (Test-Path $adb)) { $adb = 'adb' }
+if (-not $Device) {
+  $envFile = Join-Path $root 'tv.env'
+  if (-not (Test-Path $envFile)) { throw "Create tv.env from tv.env.example or pass -Device" }
+  $ip = (Select-String -Path $envFile -Pattern '^TV_IP=(.+)$' | Select-Object -First 1).Matches[0].Groups[1].Value.Trim()
+  $Device = "${ip}:5555"
+}
 
 $AmazonHome = 'com.amazon.tv.launcher/.ui.HomeActivity_vNext'
 $GlassPkg   = 'dev.glasshome.launcher'
