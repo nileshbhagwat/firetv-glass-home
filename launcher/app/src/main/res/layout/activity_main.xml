@@ -129,6 +129,7 @@
             android:layout_height="@dimen/tile_slot_height"
             android:layout_gravity="top|center_horizontal"
             android:layout_marginTop="348dp"
+            android:gravity="center_horizontal"
             android:orientation="horizontal" />
 
         <TextView
