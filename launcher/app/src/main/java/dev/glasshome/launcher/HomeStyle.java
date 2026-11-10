@@ -22,6 +22,14 @@ final class HomeStyle {
         return CLASSIC;
     }
 
+    /**
+     * True for gallery styles, which show several titles at once and mix films with series.
+     * The other styles show one title at a time and use films.
+     */
+    static boolean showsSeries(String style) {
+        return RING.equals(style);
+    }
+
     static int label(String style) {
         switch (style) {
             case RING:

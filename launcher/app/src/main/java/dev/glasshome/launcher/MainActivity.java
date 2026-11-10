@@ -52,6 +52,11 @@ public final class MainActivity extends Activity {
     private static final int COLUMNS = 4;
     /** Featured titles change by themselves after this long without a key press. */
     private static final long AUTO_ADVANCE_MS = 9000;
+    /**
+     * Once focus has rested on a dock app this long, the featured titles switch to that app's.
+     * Moving quickly along the dock therefore does not load every app's titles on the way.
+     */
+    private static final long FOLLOW_APP_MS = 260;
     private static final int PILL_INPUTS = 0;
     private static final int PILL_WIFI = 1;
 
@@ -83,6 +88,13 @@ public final class MainActivity extends Activity {
     private NetworkStatus networkStatus;
     private boolean resumed;
     private final Runnable autoAdvance = this::autoAdvance;
+    /** The style in use (or being previewed in the style picker). */
+    private String style = HomeStyle.CLASSIC;
+    /** The app whose titles the featured style shows: the dock app focused last. */
+    private String heroPackage;
+    /** True while the featured style fades out before showing another app's titles. */
+    private boolean heroSwitching;
+    private final Runnable followApp = () -> followFocusedApp(true);
 
     private final StyleMenu.Host styleHost = new StyleMenu.Host() {
         @Override
@@ -337,6 +349,7 @@ public final class MainActivity extends Activity {
                 if (dx != 0) {
                     dockIndex = clamp(dockIndex + dx, 0, dockApps.size() - 1);
                 } else if (dy < 0) {
+                    followFocusedApp(false); // a switch still waiting happens now
                     zone = heroActive() ? ZONE_HERO : ZONE_TOP;
                 } else if (dy > 0 && !gridApps.isEmpty()) {
                     zone = ZONE_GRID;
@@ -370,6 +383,15 @@ public final class MainActivity extends Activity {
     }
 
     private void applyFocus(boolean animate) {
+        // The featured titles follow the focused dock app, once focus rests there.
+        main.removeCallbacks(followApp);
+        if (!java.util.Objects.equals(focusedDockPackage(), heroPackage)) {
+            if (animate) {
+                main.postDelayed(followApp, FOLLOW_APP_MS);
+            } else {
+                followFocusedApp(false);
+            }
+        }
         boolean wantApps = zone == ZONE_GRID;
         if (wantApps != appsShown || !animate) {
             setAppsShown(wantApps, animate);
@@ -524,8 +546,11 @@ public final class MainActivity extends Activity {
 
     /** Shows a home style (also used for the live preview in the style picker). */
     private void applyStyle(String requested) {
-        String style = HomeStyle.normalize(requested);
+        style = HomeStyle.normalize(requested);
         String keepId = hero != null && hero.current() != null ? hero.current().id : null;
+        heroSlot.animate().cancel();
+        heroSlot.setAlpha(1f);
+        heroSwitching = false;
         if (hero != null) {
             hero.stop();
             heroSlot.removeAllViews();
@@ -538,11 +563,59 @@ public final class MainActivity extends Activity {
             hero.setGreeting(greeting.getText());
             heroSlot.addView(hero, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-            hero.bind(featured, featured.items(), keepId);
+            hero.bind(featured, featured.itemsFor(heroPackage, style), keepId);
             if (resumed) hero.start();
         }
+        heroChanged();
+    }
+
+    private String focusedDockPackage() {
+        return dockApps.isEmpty() ? null : dockApps.get(dockIndex).packageName;
+    }
+
+    /**
+     * Shows the titles of the app focused in the dock, and only that app's. An app without
+     * titles shows the plain home (clock and app name). With {@code animate} the style fades
+     * out and back in around the change.
+     */
+    private void followFocusedApp(boolean animate) {
+        main.removeCallbacks(followApp);
+        String wanted = focusedDockPackage();
+        if (java.util.Objects.equals(wanted, heroPackage) && !heroSwitching) return;
+        heroPackage = wanted;
+        if (hero == null) return;
+        heroSlot.animate().cancel();
+        if (!animate) {
+            heroSwitching = false;
+            heroSlot.setAlpha(1f);
+            rebindHero();
+            return;
+        }
+        heroSwitching = true;
+        heroSlot.animate().alpha(0f).setDuration(140).withEndAction(() -> {
+            heroSwitching = false;
+            rebindHero();
+            heroSlot.animate().alpha(1f).setDuration(360).start();
+        }).start();
+    }
+
+    private void rebindHero() {
+        if (hero == null) return;
+        hero.bind(featured, featured.itemsFor(heroPackage, style), null);
+        heroChanged();
+    }
+
+    /** Updates the rest of the home screen after the featured titles changed. */
+    private void heroChanged() {
         boolean heroOn = heroActive();
-        clockGroup.setVisibility(heroOn && hero.replacesClock() ? View.INVISIBLE : View.VISIBLE);
+        int clock = heroOn && hero.replacesClock() ? View.INVISIBLE : View.VISIBLE;
+        if (clockGroup.getVisibility() != clock) {
+            clockGroup.setVisibility(clock);
+            if (clock == View.VISIBLE) {
+                clockGroup.setAlpha(0f);
+                clockGroup.animate().alpha(1f).setDuration(360).start();
+            }
+        }
         if (zone == ZONE_HERO && !heroOn) zone = ZONE_DOCK;
         applyFocus(true);
         scheduleAutoAdvance();

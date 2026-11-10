@@ -59,6 +59,23 @@ final class FeaturedStore {
         return items;
     }
 
+    /**
+     * The titles one app shows in a style: only that app's own titles, films and series for a
+     * gallery style, films only for styles that show one title at a time (series are used there
+     * only when the app has no films).
+     */
+    List<FeaturedItem> itemsFor(String packageName, String style) {
+        List<FeaturedItem> mine = new ArrayList<>();
+        List<FeaturedItem> films = new ArrayList<>();
+        if (packageName == null) return mine;
+        for (FeaturedItem item : items) {
+            if (!packageName.equals(item.packageName)) continue;
+            mine.add(item);
+            if (!item.isSeries()) films.add(item);
+        }
+        return HomeStyle.showsSeries(style) || films.isEmpty() ? mine : films;
+    }
+
     /** Re-reads index.json and calls {@code done} on the main thread. */
     void reload(Runnable done) {
         final int request = ++generation;
@@ -113,6 +130,7 @@ final class FeaturedStore {
                 if (card == null) continue;
                 result.add(new FeaturedItem(
                         o.optString("id", String.valueOf(i)),
+                        o.optString("kind", FeaturedItem.KIND_FILM),
                         o.optString("title", ""),
                         o.optString("provider", null),
                         o.optString("package", null),
