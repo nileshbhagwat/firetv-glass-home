@@ -4,7 +4,10 @@ import android.animation.Animator;
 import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.RectF;
+import android.graphics.drawable.BitmapDrawable;
 import android.view.Gravity;
 import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
@@ -74,13 +77,9 @@ final class DepthHero extends HeroView {
         clock.setFormat12Hour("h:mm");
         clock.setFormat24Hour("HH:mm");
         styleText(clock, 132, 200, 0xF2FFFFFF);
-        TextClock date = new TextClock(c);
-        date.setFormat12Hour("EEEE, d MMMM");
-        date.setFormat24Hour("EEEE, d MMMM");
-        styleText(date, 17, 300, c.getColor(R.color.text_secondary));
+        // No date line here: it would sit half behind the character.
         clockGroup.addView(greeting);
         clockGroup.addView(clock);
-        clockGroup.addView(date);
         scene.addView(clockGroup, at(dp(70), dp(86), LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 
         character = characterView();
@@ -143,7 +142,6 @@ final class DepthHero extends HeroView {
     private void show(FeaturedItem item, boolean animate) {
         if (item == null) return;
         block.set(item, animate);
-        placeClock(item, animate);
         String full = item.full != null ? item.full : item.card;
         loadInto(backdrop, full, width, height, false, () -> {
             if (animate) {
@@ -156,12 +154,16 @@ final class DepthHero extends HeroView {
         if (!item.hasFullCharacter()) {
             loadInto(character, null, 0, 0, true, null);
             character.setVisibility(GONE);
+            placeClock(item, null, animate);
             return;
         }
         character.setVisibility(VISIBLE);
         place(character, item.fullCharRect, width, height);
         loadInto(character, item.fullChar, character.getLayoutParams().width,
                 character.getLayoutParams().height, true, () -> {
+                    Bitmap cutout = character.getDrawable() instanceof BitmapDrawable
+                            ? ((BitmapDrawable) character.getDrawable()).getBitmap() : null;
+                    placeClock(item, cutout, animate);
                     if (animate) {
                         character.setAlpha(0f);
                         character.setTranslationY(dp(26));
@@ -174,13 +176,43 @@ final class DepthHero extends HeroView {
                 });
     }
 
-    /** Centres the clock on the character so the character stands in front of it. */
-    private void placeClock(FeaturedItem item, boolean animate) {
-        float centre = item.hasFullCharacter() ? item.fullCharRect.centerX() * width : width * 0.5f;
+    /**
+     * Puts the clock beside the character at the clock's height, overlapping its outline by
+     * about a fifth of the clock's width: the character covers one edge of the time, never the
+     * middle of it.
+     */
+    private void placeClock(FeaturedItem item, Bitmap cutout, boolean animate) {
         int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         clockGroup.measure(unspecified, unspecified);
         int w = clockGroup.getMeasuredWidth();
-        int left = Math.round(Math.max(dp(70), Math.min(width - dp(70) - w, centre - w / 2f)));
+        float target = dp(70);
+        if (cutout != null && item.hasFullCharacter()) {
+            RectF r = item.fullCharRect;
+            float charLeft = r.left * width, charTop = r.top * height;
+            float charWidth = r.width() * width, charHeight = r.height() * height;
+            float minX = Float.MAX_VALUE, maxX = -1f;
+            for (int y = dp(110); y <= dp(210); y += dp(10)) {
+                float fy = (y - charTop) / charHeight;
+                if (fy < 0f || fy >= 1f) continue;
+                int by = Math.min(cutout.getHeight() - 1, (int) (fy * cutout.getHeight()));
+                for (int bx = 0; bx < cutout.getWidth(); bx += 2) {
+                    if (Color.alpha(cutout.getPixel(bx, by)) > 160) {
+                        float x = charLeft + bx * charWidth / cutout.getWidth();
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                    }
+                }
+            }
+            if (maxX >= 0f) {
+                float overlap = w * 0.22f;
+                float spaceLeft = minX - dp(70);
+                float spaceRight = width - dp(70) - maxX;
+                target = spaceRight >= spaceLeft ? maxX - overlap : minX - w + overlap;
+            } else {
+                target = r.centerX() * width - w / 2f;
+            }
+        }
+        int left = Math.round(Math.max(dp(70), Math.min(width - dp(70) - w, target)));
         Runnable apply = () -> {
             LayoutParams lp = (LayoutParams) clockGroup.getLayoutParams();
             lp.leftMargin = left;
