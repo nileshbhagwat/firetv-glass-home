@@ -9,7 +9,9 @@ if [ ! -f debug.keystore ]; then
         -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 \
         -validity 10000 -dname "CN=Android Debug,O=Android,C=US" > /dev/null
 fi
-gradle --no-daemon --console=plain assembleDebug
+# Build output and Gradle's project cache stay inside the container, separate from host builds.
+export GLASSHOME_BUILD_DIR=/tmp/glasshome/app-build
+gradle --no-daemon --console=plain --project-cache-dir /tmp/glasshome/gradle-project assembleDebug
 mkdir -p /work/dist
-cp app/build/outputs/apk/debug/app-debug.apk /work/dist/glass-home-debug.apk
+cp "$GLASSHOME_BUILD_DIR/outputs/apk/debug/app-debug.apk" /work/dist/glass-home-debug.apk
 echo "Built dist/glass-home-debug.apk"

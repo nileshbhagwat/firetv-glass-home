@@ -2,6 +2,13 @@ plugins {
     id 'com.android.application'
 }
 
+// Docker builds use a build folder inside the container (GLASSHOME_BUILD_DIR), so they never
+// share incremental state with host builds, which record Windows paths.
+def externalBuildDir = System.getenv('GLASSHOME_BUILD_DIR')
+if (externalBuildDir) {
+    layout.buildDirectory.set(file(externalBuildDir))
+}
+
 // A project-local debug keystore keeps the signature stable across builds,
 // so updates install over the previous version without uninstalling.
 def projectKeystore = rootProject.file('debug.keystore')
