@@ -1,0 +1,47 @@
+# Packages disabled by scripts/debloat.ps1 with "pm disable-user --user 0".
+# Nothing is uninstalled; scripts/restore.ps1 re-enables everything.
+# Lines starting with "restrict:" are protected by Fire OS (they cannot be
+# disabled); they are blocked from running in the background instead.
+
+# Manufacturer telemetry and analytics
+com.miui.tv.analytics
+com.amazon.tv.acr
+com.amazon.device.telemetry.emitter
+com.amazon.dp.logger
+com.amazon.logan
+com.amazon.perfc
+com.amazon.perfcollection
+com.amazon.wirelessmetrics.service
+com.amazon.neo.minerva.logcat
+restrict:com.amazon.device.metrics
+restrict:com.amazon.device.crashmanager
+restrict:com.amazon.device.logmanager
+restrict:com.fireos.usagestats.proxy
+
+# Advertising, sponsored content and recommendations
+com.amazon.hybridadidservice
+com.amazon.kso.blackbird
+com.amazon.sneakpeek
+com.amazon.tv.democontent.provider
+com.amazon.shoptv.client
+com.amazon.media.recommendations
+restrict:com.amazon.ftvads.deeplinking
+
+# Background services not needed day to day
+com.amazon.tv.releasenotes
+com.amazon.storm.lightning.tutorial
+com.amazon.tmm.tutorial
+com.amazon.tv.earlyaccess
+com.amazon.tv.ffsprovisioneeclient
+com.amazon.whisperjoin.middleware.np
+com.amazon.whisperjoin.middleware.v2.np
+
+# Preloaded apps
+com.amazon.gamehub
+com.amazon.tv.website_launcher
+com.amazon.bueller.photos
+com.mediatek.opapp
+
+# Streaming apps not in use
+com.jio.media.stb.ondemand
+com.amazon.minitv.android.app
