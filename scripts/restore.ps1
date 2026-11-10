@@ -30,8 +30,8 @@ $AmazonHome = 'com.amazon.tv.launcher/.ui.HomeActivity_vNext'
 $GlassPkg   = 'dev.glasshome.launcher'
 
 if (-not $BackupDir) {
-  $latest = Join-Path $root 'backup\LATEST'
-  if (-not (Test-Path $latest)) { throw "No backup\LATEST file found. Pass -BackupDir." }
+  $latest = Join-Path $root 'backup\BASELINE'
+  if (-not (Test-Path $latest)) { throw "No backup\BASELINE file found. Run scripts\backup.ps1 first or pass -BackupDir." }
   $BackupDir = Join-Path $root ((Get-Content $latest -Raw).Trim())
 }
 $origDisabledFile = Join-Path $BackupDir 'packages-disabled.txt'
