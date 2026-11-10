@@ -15,8 +15,12 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 - All other apps in a four-column grid that slides up when you press Down.
 - One translucent glass highlight that springs from item to item; the focused tile lifts
   towards you in 3D, catches a brief light sheen and shows its name underneath.
-- A content shelf: when an app that shares recommendations is focused in the dock (currently
-  Netflix), its latest titles appear above the dock as artwork cards that pop out in turn.
+- Five home styles, chosen with the remote's Menu button: Classic, and four styles that show
+  this week's trending titles from your apps with the main character cut out so that it
+  stands in front of the screen: **Gallery ring** (a turning 3D ring of glass cards),
+  **Depth clock** (the character stands in front of a large clock), **Break-out card** (the
+  character climbs out of a tilting glass card) and **Glass mosaic** (the artwork splits into
+  breathing glass tiles).
 - Deterministic D-pad navigation that remembers the last focused tile.
 - Lightweight: no blur, no video, no network polling (about 115 MB PSS on the TV).
 - Telemetry, advertising and unused preloaded apps disabled; nothing is uninstalled, and a
@@ -54,6 +58,11 @@ file that is downloaded.
 | Select | Open the focused app or pill |
 | Back | Return to the dock |
 | Home | Return to Glass Home; pressing Home on Glass Home returns to the dock |
+| Menu (three lines) | Choose the home style: Left/Right previews each style, Select keeps it, Back cancels |
+
+In the featured styles, Up from the dock moves to the featured title: Left/Right changes
+title, Select opens the app that streams it. Titles also change by themselves every nine
+seconds while nobody is using the remote, and all motion stops while an app is open.
 
 - **Inputs** lists the HDMI ports, AV and Live TV. Fire OS reserves its own input player for
   Amazon-signed apps, so HDMI and AV open in Glass Home's own full-screen player through the
@@ -119,14 +128,40 @@ powershell -ExecutionPolicy Bypass -File scripts\set-name.ps1 Sam
 powershell -ExecutionPolicy Bypass -File scripts\set-name.ps1 -Default
 ```
 
-### Content shelf
+### Home styles and featured titles
 
-Apps can share recommendations with the home screen. On this TV only Netflix does; Prime
-Video, JioHotstar, Zee5 and SonyLIV currently share nothing, and Amazon's own artwork comes
-from Amazon's servers and is not available to other apps. Any app that starts sharing
-appears in the shelf automatically. Reading recommendations needs notification access, which
-the install scripts grant over ADB (Glass Home only reads notifications marked as content
-recommendations) and `restore.bat` removes.
+The featured styles need titles, which are prepared on the PC and copied to the TV; the TV
+itself downloads nothing and does no image processing. `featured.bat`:
+
+1. asks [TMDB](https://www.themoviedb.org/) for this week's trending films and series and
+   keeps those that stream in India on the dock's apps (Netflix, Prime Video, JioHotstar,
+   Zee5, SonyLIV), using artwork without text;
+2. cuts the main character out of each picture with the ISNet background-removal model
+   (on the PC's CPU, in Docker) and blends it so that it reads as a separate layer: a
+   shallow depth of field behind it, cleaned edges, light wrap from the scene, a rim light
+   on the side facing the scene's light, and a soft contact shadow;
+3. copies the result to the TV (`scripts\push-featured.ps1`).
+
+One-time setup: create a free account at themoviedb.org, then under *Settings > API* request
+an API key (choose *Developer*), copy the **API Read Access Token** and add it to `tv.env`:
+
+```
+TMDB_TOKEN=eyJ...
+```
+
+Then run `featured.bat` whenever you want new titles (about two minutes for eight titles).
+`featured.bat demo` prepares generated demo artwork instead and needs no account. To choose
+the style from the PC, or to remove the titles:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\set-style.ps1 ring    # classic, ring, depth, breakout, mosaic
+powershell -ExecutionPolicy Bypass -File scripts\push-featured.ps1 -Remove
+```
+
+The artwork belongs to its owners and is used here for personal viewing; it stays in the
+ignored `featured/` folder on the PC and in the launcher's own storage on the TV, and is never
+committed. Titles whose artwork has no clear main character are shown without the pop-out
+effect.
 
 ### Wallpaper
 
@@ -217,7 +252,10 @@ settings as they were before any change.
 | Script | Purpose |
 | --- | --- |
 | `glasshome.bat` | One-click build in Docker and install on the TV |
+| `featured.bat` | Prepare this week's featured titles and copy them to the TV |
 | `restore.bat` | Undo the debloat and remove Glass Home |
+| `scripts/push-featured.ps1` | Copy prepared titles to the TV, or remove them |
+| `scripts/set-style.ps1` | Choose the home style from the PC |
 | `scripts/install.ps1` | Install a built APK using the host's adb |
 | `scripts/set-dock.ps1` | List apps, set or reset the dock |
 | `scripts/set-wallpaper.ps1` | Set or remove the wallpaper |
@@ -258,14 +296,16 @@ name to apps with location permission:
 ```
 config/               Debloat package list
 docker/               Toolchain image, container build and install scripts
+docker/featured/      Featured-titles image and script (TMDB, ISNet cut-outs, blending)
 docs/images/          Screenshots
 launcher/             Android project (Java, AndroidX RecyclerView)
 scripts/              PowerShell scripts for the TV and host builds
 glasshome.bat         One-click build and install
+featured.bat          One-click featured titles
 restore.bat           One-click restore
 mise.toml             Pinned toolchain for host builds
-tv.env.example        TV address template
-backup/, tools/, dist/, shots/   Local only (not committed)
+tv.env.example        TV address and TMDB token template
+backup/, tools/, dist/, shots/, featured/   Local only (not committed)
 ```
 
 ## Credits
@@ -275,6 +315,10 @@ backup/, tools/, dist/, shots/   Local only (not committed)
   (`launcher/app/src/main/assets/fonts/OFL.txt`).
 - Pill icons from Google's Material Icons, licensed under the Apache License 2.0.
 - AndroidX RecyclerView, licensed under the Apache License 2.0.
+- Featured titles and artwork from [TMDB](https://www.themoviedb.org/). This product uses the
+  TMDB API but is not endorsed or certified by TMDB.
+- Character cut-outs use the ISNet (DIS) general-use model as published by the
+  [rembg](https://github.com/danielgatis/rembg) project, run with ONNX Runtime (MIT).
 
 ## Licence
 

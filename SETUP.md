@@ -123,6 +123,26 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launc
 | Platform 34, build tools 34.0.0, platform-tools 37.0.1 (Windows) | Google, via the Android CLI and the Android Gradle Plugin | about 130 MB | `tools\android-sdk` |
 | Android Gradle Plugin 8.7.3 and the app libraries listed above | Google Maven and Maven Central, via Gradle | 344 MB | `.gradle-home` |
 
+### Docker image `glasshome-featured:1` (featured titles)
+
+Built by `featured.bat` from `docker/featured/Dockerfile`. Image ID
+`sha256:b93841f20d4dd4b4f9f972a4c4a5a22e28a3c21c11600f882fcbf75769bd57af`, 818 MB.
+
+| Item | Source | Size | Checksum |
+| --- | --- | --- | --- |
+| Base image `python:3.12-slim-bookworm` (Python 3.12.16, Debian 12) | Docker Hub | n/a | Pinned by tag |
+| `onnxruntime` 1.20.1, `numpy` 2.1.3, `pillow` 11.0.0 and their dependencies `coloredlogs` 15.0.1, `flatbuffers` 25.12.19, `humanfriendly` 10.0, `mpmath` 1.3.0, `packaging` 26.3, `protobuf` 7.36.2, `sympy` 1.14.0 | PyPI (pip) | about 120 MB | Verified by pip |
+| ISNet general-use matting model `isnet-general-use.onnx` | `https://github.com/danielgatis/rembg/releases/download/v0.0.0/isnet-general-use.onnx` | 178,648,008 bytes | SHA-256 `60920e99c45464f2ba57bee2ad08c919a52bbf852739e96947fbb4358c0d964a` (checked in the Dockerfile) |
+
+Each `featured.bat` run downloads title data and artwork from TMDB (`api.themoviedb.org`,
+`image.tmdb.org`) into the ignored `featured/` folder; nothing is downloaded with `featured.bat demo`.
+
+### One-off maintenance tools
+
+Run with `uvx` / `uv run` (cached in `%LOCALAPPDATA%\uv\cache`, not installed globally) when
+the repository was prepared for publication: `git-filter-repo` (rewrote the history to remove
+personal details) and `pillow` 13.0.0 (edited the screenshots). `uv cache clean` removes them.
+
 ## Licences accepted
 
 - **Android SDK License Agreement**: accepted with the project owner's approval on
@@ -151,11 +171,12 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launc
 | `%LOCALAPPDATA%\mise\installs\java`, `...\gradle` | mise | Java 17 and Gradle 8.10.2 for Option B |
 | Docker image `glasshome-builder:2` | `glasshome.bat` | Build toolchain |
 | Docker volume `glasshome-gradle` | `glasshome.bat` | Gradle download cache |
+| Docker image `glasshome-featured:1` | `featured.bat` | Featured titles: Python, ONNX Runtime and the ISNet model |
 
 ## Removing the toolchain
 
 ```bat
-docker rmi glasshome-builder:2
+docker rmi glasshome-builder:2 glasshome-featured:1
 docker volume rm glasshome-gradle
 rmdir /s /q tools dist .gradle-home launcher\.gradle launcher\app\build launcher\build
 mise uninstall java@temurin-17.0.21+9 gradle@8.10.2
