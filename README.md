@@ -275,3 +275,8 @@ backup/, tools/, dist/, shots/   Local only (not committed)
   (`launcher/app/src/main/assets/fonts/OFL.txt`).
 - Pill icons from Google's Material Icons, licensed under the Apache License 2.0.
 - AndroidX RecyclerView, licensed under the Apache License 2.0.
+
+## Licence
+
+Released under the MIT License (see `LICENSE`). Third-party components keep their own
+licences, listed under Credits.
