@@ -65,10 +65,14 @@ file that is downloaded.
 Fire OS always sends the Home button to Amazon's own launcher, and that launcher is
 protected: it cannot be disabled and the standard "default home app" setting is ignored.
 Glass Home therefore includes a small accessibility service, *Glass Home: Home button*.
-When Amazon's home screen stays in front, the service opens Glass Home. Amazon's screen is
-visible for roughly a third of a second. After the TV restarts, Amazon's home screen stays
-for about four seconds, until Android has started the service; Glass Home then takes over
-on its own.
+As soon as Amazon's home screen appears, the service opens Glass Home with the tile of the
+app you just left in focus. Amazon's screen is visible for a fraction of a second.
+
+After a memory-heavy app such as YouTube, Fire OS may have stopped its launcher in the
+background. Pressing Home then shows Amazon's loading screen (three dots) for two to three
+seconds while it reloads, and Glass Home appears once it has. Fire OS only reports the home
+screen after that reload, and it does not pass the Home key to other apps, so this wait
+cannot be skipped. At start-up, Fire OS opens Glass Home directly.
 
 Fire TV's Settings screens pass through Amazon's home screen on the way in; the service
 recognises this and leaves Settings open. The service only reacts to window changes and does
@@ -97,8 +101,10 @@ comfortable maximum). The default dock is defined in
 | JioHotstar | `in.startv.hotstar` |
 | SonyLIV | `com.onemainstream.sonyliv.android` |
 | Zee5 | `com.zee5.amazon` |
-| Appstore | `com.amazon.venezia` |
 | Gallery | `com.amazon.tv.localgallery` |
+
+The Appstore (`com.amazon.venezia`) has no tile but stays installed: apps from Amazon's store
+use it in the background for updates and licence checks.
 
 ### Wallpaper
 
