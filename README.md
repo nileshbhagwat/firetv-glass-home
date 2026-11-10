@@ -16,8 +16,8 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 - One translucent glass highlight that springs from item to item; the focused tile lifts
   towards you in 3D, catches a brief light sheen and shows its name underneath.
 - Five home styles, chosen with the remote's Menu button: Classic, and four styles that show
-  this week's trending titles from your apps with the main character cut out so that it
-  stands in front of the screen: **Gallery ring** (a turning 3D ring of glass cards),
+  the focused app's most popular titles this month, with the main character cut out so that
+  it stands in front of the screen: **Gallery ring** (a turning 3D ring of glass cards),
   **Depth clock** (the character stands in front of a large clock), **Break-out card** (the
   character climbs out of a tilting glass card) and **Glass mosaic** (the artwork splits into
   breathing glass tiles).
@@ -37,7 +37,7 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 | ![Break-out card](docs/images/style-breakout.jpg) | ![Glass mosaic](docs/images/style-mosaic.jpg) |
 
 The style screenshots use the generated demo artwork (`featured.bat demo`); with
-`featured.bat` the cards show this week's trending titles instead.
+`featured.bat` they show each app's popular films and series instead.
 
 ## Quick start
 
@@ -70,9 +70,13 @@ file that is downloaded.
 | Home | Return to Glass Home; pressing Home on Glass Home returns to the dock |
 | Menu (three lines) | Choose the home style: Left/Right previews each style, Select keeps it, Back cancels |
 
-In the featured styles, Up from the dock moves to the featured title: Left/Right changes
-title, Select opens the app that streams it. Titles also change by themselves every nine
-seconds while nobody is using the remote, and all motion stops while an app is open.
+In the featured styles, the titles are those of the app focused in the dock, and only that
+app's: focus Prime Video and the style shows Prime Video's titles. The gallery ring mixes
+films and series; the styles that show one title at a time show films. An app without titles
+(YouTube, for example) shows the plain clock and app name. Up from the dock moves to the
+featured title: Left/Right changes title, Select opens the app. Titles also change by
+themselves every nine seconds while nobody is using the remote, and all motion stops while
+an app is open.
 
 - **Inputs** lists the HDMI ports, AV and Live TV. Fire OS reserves its own input player for
   Amazon-signed apps, so HDMI and AV open in Glass Home's own full-screen player through the
@@ -147,9 +151,14 @@ Press Menu (three lines) on the home screen to open the style picker shown above
 The featured styles need titles, which are prepared on the PC and copied to the TV; the TV
 itself downloads nothing and does no image processing. `featured.bat`:
 
-1. asks [TMDB](https://www.themoviedb.org/) for this week's trending films and series and
-   keeps those that stream in India on the dock's apps (Netflix, Prime Video, JioHotstar,
-   Zee5, SonyLIV), using artwork without text;
+1. asks [TMDB](https://www.themoviedb.org/), with its streaming-service filter for India,
+   for each dock app's most popular films (6) and series (4). TMDB's popularity score is
+   driven by each day's views, votes and watchlist additions, so what people are watching
+   now comes first; titles first released more than a year ago (two for apps with few
+   titles) are left out, so reruns and old favourites do not crowd out what is new. Only
+   artwork without text is used. Apps covered: Netflix, Prime Video, JioHotstar, Zee5 and
+   SonyLIV. The script uses TMDB's alternate address `api.tmdb.org`, because some Indian
+   internet providers block `api.themoviedb.org`;
 2. cuts the main character out of each picture with the ISNet background-removal model
    (on the PC's CPU, in Docker) and blends it so that it reads as a separate layer: a
    shallow depth of field behind it, cleaned edges, light wrap from the scene, a rim light
@@ -163,7 +172,10 @@ an API key (choose *Developer*), copy the **API Read Access Token** and add it t
 TMDB_TOKEN=eyJ...
 ```
 
-Then run `featured.bat` whenever you want new titles (about two minutes for eight titles).
+Then run `featured.bat` whenever you want new titles: it prepares 10 titles for each of the
+five apps (about ten minutes), copies them to the TV and the home screen updates by itself.
+The TV must be on with ADB Debugging enabled. Nothing is downloaded on the TV itself, so
+the titles stay as they are until the next run.
 `featured.bat demo` prepares generated demo artwork instead and needs no account. To choose
 the style from the PC, or to remove the titles:
 
@@ -266,7 +278,7 @@ settings as they were before any change.
 | Script | Purpose |
 | --- | --- |
 | `glasshome.bat` | One-click build in Docker and install on the TV |
-| `featured.bat` | Prepare this week's featured titles and copy them to the TV |
+| `featured.bat` | Prepare each app's popular titles and copy them to the TV |
 | `restore.bat` | Undo the debloat and remove Glass Home |
 | `scripts/push-featured.ps1` | Copy prepared titles to the TV, or remove them |
 | `scripts/set-style.ps1` | Choose the home style from the PC |
