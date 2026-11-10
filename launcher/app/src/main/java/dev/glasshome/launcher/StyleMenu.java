@@ -77,7 +77,9 @@ final class StyleMenu {
             row.addView(chip, lp);
             chips.add(chip);
         }
-        panel.addView(row);
+        // Explicit wrap-content: a default (match-parent) row would let the footer set the width.
+        panel.addView(row, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         TextView footer = text(context.getString(host.hasFeatured() ? R.string.featured_credit : R.string.featured_none),
                 12, R.color.text_secondary);
@@ -92,7 +94,9 @@ final class StyleMenu {
         }
         updateSelection();
 
-        popup = new PopupWindow(panel, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, false);
+        int unspecified = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        panel.measure(unspecified, unspecified);
+        popup = new PopupWindow(panel, panel.getMeasuredWidth(), panel.getMeasuredHeight(), false);
         popup.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         popup.setAnimationStyle(android.R.style.Animation_Dialog);
         popup.showAtLocation(anchor.getRootView(), Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0,
