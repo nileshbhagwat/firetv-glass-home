@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Required by Android to read the connected Wi-Fi network name (granted via ADB). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- A launcher lists every app; the Home helper also checks which windows are activities. -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <queries>
         <intent>
