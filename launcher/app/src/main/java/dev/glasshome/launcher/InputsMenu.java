@@ -94,7 +94,9 @@ final class InputsMenu {
                 }
                 CharSequence label = info.loadCustomLabel(activity);
                 if (TextUtils.isEmpty(label)) {
-                    label = info.loadLabel(activity);
+                    label = info.getType() == TvInputInfo.TYPE_COMPOSITE
+                            ? activity.getString(R.string.input_av)
+                            : info.loadLabel(activity);
                 }
                 Intent intent = new Intent(Intent.ACTION_VIEW,
                         TvContract.buildChannelUriForPassthroughInput(info.getId()))
