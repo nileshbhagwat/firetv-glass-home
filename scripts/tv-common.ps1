@@ -23,8 +23,12 @@ function Connect-Tv([string]$Device) {
   throw "Cannot reach $Device. Is ADB debugging on? (Fire OS turns it off when the TV restarts.)"
 }
 
-function Invoke-Tv([string]$Device) {
+# Usage: Invoke-Tv <device> <adb arguments...>. The device is taken positionally so that
+# adb flags such as -d are never mistaken for PowerShell parameters.
+function Invoke-Tv {
   $ErrorActionPreference = 'Continue'  # adb writes status to stderr; never treat it as fatal
-  Connect-Tv $Device
-  & $script:Adb -s $Device @args 2>&1 | ForEach-Object { "$_" }
+  $device = $args[0]
+  $rest = @($args | Select-Object -Skip 1)
+  Connect-Tv $device
+  & $script:Adb -s $device @rest 2>&1 | ForEach-Object { "$_" }
 }
