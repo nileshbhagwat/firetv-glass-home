@@ -7,13 +7,16 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 
 ## Features
 
-- Pitch-black home screen with a greeting, a large thin clock and the date set in Outfit.
+- Pitch-black home screen with a personal greeting ("Good evening, Sam", taken from the
+  TV's name), a large thin clock and the date set in Outfit.
 - Frosted pills for **Inputs**, **Wi-Fi** (shows the network name) and **Settings**.
 - A dock band with your main apps; the focused app's name is shown in large type above it,
   over a soft glow tinted with a colour sampled from the app's banner.
 - All other apps in a four-column grid that slides up when you press Down.
-- One translucent glass highlight that springs from item to item; the focused tile scales up
-  slightly and shows its name underneath.
+- One translucent glass highlight that springs from item to item; the focused tile lifts
+  towards you in 3D, catches a brief light sheen and shows its name underneath.
+- A content shelf: when an app that shares recommendations is focused in the dock (currently
+  Netflix), its latest titles appear above the dock as artwork cards that pop out in turn.
 - Deterministic D-pad navigation that remembers the last focused tile.
 - Lightweight: no blur, no video, no network polling (about 115 MB PSS on the TV).
 - Telemetry, advertising and unused preloaded apps disabled; nothing is uninstalled, and a
@@ -105,6 +108,25 @@ comfortable maximum). The default dock is defined in
 
 The Appstore (`com.amazon.venezia`) has no tile but stays installed: apps from Amazon's store
 use it in the background for updates and licence checks.
+
+### Name in the greeting
+
+The greeting uses the TV's name (Settings > My Fire TV > About): "SAM's Fire TV" shows
+"Good evening, Sam". To use a different name:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\set-name.ps1 Sam
+powershell -ExecutionPolicy Bypass -File scripts\set-name.ps1 -Default
+```
+
+### Content shelf
+
+Apps can share recommendations with the home screen. On this TV only Netflix does; Prime
+Video, JioHotstar, Zee5 and SonyLIV currently share nothing, and Amazon's own artwork comes
+from Amazon's servers and is not available to other apps. Any app that starts sharing
+appears in the shelf automatically. Reading recommendations needs notification access, which
+the install scripts grant over ADB (Glass Home only reads notifications marked as content
+recommendations) and `restore.bat` removes.
 
 ### Wallpaper
 
