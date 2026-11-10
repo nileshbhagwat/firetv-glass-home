@@ -90,6 +90,8 @@ public final class MainActivity extends Activity {
     private final Runnable autoAdvance = this::autoAdvance;
     /** The style in use (or being previewed in the style picker). */
     private String style = HomeStyle.CLASSIC;
+    /** True when the featured styles show the focused app's titles; false for all apps' titles. */
+    private boolean titlesFollowApp = true;
     /** The app whose titles the featured style shows: the dock app focused last. */
     private String heroPackage;
     /** True while the featured style fades out before showing another app's titles. */
@@ -103,14 +105,20 @@ public final class MainActivity extends Activity {
         }
 
         @Override
-        public void previewStyle(String style) {
-            applyStyle(style);
+        public boolean committedTitlesFollowApp() {
+            return Prefs.titlesFollowApp(MainActivity.this);
         }
 
         @Override
-        public void commitStyle(String style) {
+        public void preview(String style, boolean titlesFollowApp) {
+            showHome(style, titlesFollowApp);
+        }
+
+        @Override
+        public void commit(String style, boolean titlesFollowApp) {
             Prefs.setStyle(MainActivity.this, style);
-            applyStyle(style);
+            Prefs.setTitlesFollowApp(MainActivity.this, titlesFollowApp);
+            showHome(style, titlesFollowApp);
         }
 
         @Override
@@ -139,7 +147,7 @@ public final class MainActivity extends Activity {
                 updateGreeting(); // the name may have changed (scripts/set-name.ps1)
                 loadWallpaper();
                 reloadApps();
-                featured.reload(() -> applyStyle(Prefs.style(MainActivity.this)));
+                featured.reload(() -> showHome(Prefs.style(MainActivity.this), Prefs.titlesFollowApp(MainActivity.this)));
             } else {
                 updateGreeting();
             }
@@ -203,7 +211,8 @@ public final class MainActivity extends Activity {
         updateGreeting();
         loadWallpaper();
         reloadApps();
-        featured.reload(() -> applyStyle(Prefs.style(this)));
+        titlesFollowApp = Prefs.titlesFollowApp(this);
+        featured.reload(() -> showHome(Prefs.style(this), Prefs.titlesFollowApp(this)));
     }
 
     @Override
@@ -393,7 +402,7 @@ public final class MainActivity extends Activity {
     private void applyFocus(boolean animate) {
         // The featured titles follow the focused dock app, once focus rests there.
         main.removeCallbacks(followApp);
-        if (!java.util.Objects.equals(focusedDockPackage(), heroPackage)) {
+        if (titlesFollowApp && !java.util.Objects.equals(focusedDockPackage(), heroPackage)) {
             if (animate) {
                 main.postDelayed(followApp, FOLLOW_APP_MS);
             } else {
@@ -571,10 +580,27 @@ public final class MainActivity extends Activity {
             hero.setGreeting(greeting.getText());
             heroSlot.addView(hero, new FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-            hero.bind(featured, featured.itemsFor(heroPackage, style), keepId);
+            hero.bind(featured, heroItems(), keepId);
             if (resumed) hero.start();
         }
         heroChanged();
+    }
+
+    /**
+     * Shows a home style with the focused app's titles or with all apps' titles (also used
+     * for the live preview in the style picker).
+     */
+    private void showHome(String style, boolean followApp) {
+        if (followApp != titlesFollowApp) {
+            titlesFollowApp = followApp;
+            heroPackage = focusedDockPackage(); // when following again, start at the focused app
+        }
+        applyStyle(style);
+    }
+
+    /** The titles for the current style: the focused app's, or a mix of all apps'. */
+    private List<FeaturedItem> heroItems() {
+        return titlesFollowApp ? featured.itemsFor(heroPackage, style) : featured.itemsForAllApps(style);
     }
 
     private String focusedDockPackage() {
@@ -588,6 +614,7 @@ public final class MainActivity extends Activity {
      */
     private void followFocusedApp(boolean animate) {
         main.removeCallbacks(followApp);
+        if (!titlesFollowApp) return; // all apps' titles: nothing changes with the focus
         String wanted = focusedDockPackage();
         if (java.util.Objects.equals(wanted, heroPackage) && !heroSwitching) return;
         debug("featured titles follow " + wanted + " (was " + heroPackage + ", dock " + dockIndex
@@ -611,7 +638,7 @@ public final class MainActivity extends Activity {
 
     private void rebindHero() {
         if (hero == null) return;
-        hero.bind(featured, featured.itemsFor(heroPackage, style), null);
+        hero.bind(featured, heroItems(), null);
         heroChanged();
     }
 

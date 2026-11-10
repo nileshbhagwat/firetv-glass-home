@@ -13,6 +13,7 @@
     <color name="menu_bg">#F21C1C1E</color>
     <color name="menu_stroke">#24FFFFFF</color>
     <color name="menu_item_focused">#29FFFFFF</color>
+    <color name="menu_item_chosen">#59FFFFFF</color>
     <color name="scrim">#99000000</color>
     <color name="accent_default">#FF9A9AB0</color>
 </resources>

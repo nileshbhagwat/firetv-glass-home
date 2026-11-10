@@ -20,7 +20,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -36,6 +38,8 @@ final class FeaturedStore {
 
     private static final String TAG = "GlassHome";
     private static final int CACHE_BYTES = 40 * 1024 * 1024;
+    /** Most titles shown when the featured styles mix all apps. */
+    static final int ALL_APPS_LIMIT = 12;
 
     private final File dir;
     private final int fallbackAccent;
@@ -74,6 +78,34 @@ final class FeaturedStore {
             if (!item.isSeries()) films.add(item);
         }
         return HomeStyle.showsSeries(style) || films.isEmpty() ? mine : films;
+    }
+
+    /**
+     * Titles from every app for a style (films only for one-title-at-a-time styles, as in
+     * {@link #itemsFor}), taking turns between the apps so that each one is represented, and at
+     * most {@link #ALL_APPS_LIMIT} so the gallery ring stays light.
+     */
+    List<FeaturedItem> itemsForAllApps(String style) {
+        boolean anyFilm = false;
+        for (FeaturedItem item : items) anyFilm |= !item.isSeries();
+        boolean filmsOnly = !HomeStyle.showsSeries(style) && anyFilm;
+        Map<String, List<FeaturedItem>> byApp = new LinkedHashMap<>();
+        for (FeaturedItem item : items) {
+            if (filmsOnly && item.isSeries()) continue;
+            byApp.computeIfAbsent(String.valueOf(item.packageName), k -> new ArrayList<>()).add(item);
+        }
+        List<FeaturedItem> result = new ArrayList<>();
+        for (int round = 0; result.size() < ALL_APPS_LIMIT; round++) {
+            boolean added = false;
+            for (List<FeaturedItem> app : byApp.values()) {
+                if (round < app.size() && result.size() < ALL_APPS_LIMIT) {
+                    result.add(app.get(round));
+                    added = true;
+                }
+            }
+            if (!added) break;
+        }
+        return result;
     }
 
     /** Re-reads index.json and calls {@code done} on the main thread. */
