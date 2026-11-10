@@ -39,7 +39,9 @@ foreach ($entry in $list) {
       Add-Content $disabledLog "$pkg $(Get-Date -Format o) disabled"
       Write-Host ("  {0,-48} disabled" -f $pkg)
     } else {
-      Write-Host ("  {0,-48} FAILED: {1}" -f $pkg, $result)
+      $reason = if ($result -match 'SecurityException: ([^	
+]+)') { $Matches[1] } else { $result.Substring(0, [Math]::Min(120, $result.Length)) }
+      Write-Host ("  {0,-48} FAILED: {1}" -f $pkg, $reason)
     }
   }
 }
