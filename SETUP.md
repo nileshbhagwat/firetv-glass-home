@@ -141,7 +141,7 @@ Each `featured.bat` run downloads title data and artwork from TMDB (`api.themovi
 
 Run with `uvx` / `uv run` (cached in `%LOCALAPPDATA%\uv\cache`, not installed globally) when
 the repository was prepared for publication: `git-filter-repo` (rewrote the history to remove
-personal details) and `pillow` 13.0.0 (edited the screenshots). `uv cache clean` removes them.
+personal details) and `pillow` 13.0.0 with `numpy` (edited the screenshots). `uv cache clean` removes them.
 
 ## Licences accepted
 

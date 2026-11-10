@@ -30,6 +30,15 @@ A minimal home screen and a reversible debloat for a Xiaomi Fire TV
 | --- | --- |
 | ![Inputs menu](docs/images/inputs.png) | ![Apps grid](docs/images/apps.png) |
 
+| Gallery ring | Depth clock |
+| --- | --- |
+| ![Gallery ring](docs/images/style-ring.jpg) | ![Depth clock](docs/images/style-depth.jpg) |
+| **Break-out card** | **Glass mosaic** |
+| ![Break-out card](docs/images/style-breakout.jpg) | ![Glass mosaic](docs/images/style-mosaic.jpg) |
+
+The style screenshots use the generated demo artwork (`featured.bat demo`); with
+`featured.bat` the cards show this week's trending titles instead.
+
 ## Quick start
 
 Requirements: Windows with Docker Desktop, and the TV on the same network as the PC.
@@ -129,6 +138,10 @@ powershell -ExecutionPolicy Bypass -File scripts\set-name.ps1 -Default
 ```
 
 ### Home styles and featured titles
+
+![Style picker](docs/images/style-picker.jpg)
+
+Press Menu (three lines) on the home screen to open the style picker shown above.
 
 The featured styles need titles, which are prepared on the PC and copied to the TV; the TV
 itself downloads nothing and does no image processing. `featured.bat`:
