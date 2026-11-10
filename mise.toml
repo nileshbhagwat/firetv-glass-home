@@ -1,0 +1,25 @@
+# Project-local toolchain for building on the host instead of Docker.
+# See SETUP.md ("Option B: mise"). Nothing here is installed globally:
+# Java and Gradle are pinned per project, the Android SDK and Gradle cache
+# live inside this folder.
+
+[tools]
+java = "temurin-17"
+gradle = "8.10.2"
+
+[env]
+ANDROID_HOME = "{{config_root}}/tools/android-sdk"
+ANDROID_SDK_ROOT = "{{config_root}}/tools/android-sdk"
+GRADLE_USER_HOME = "{{config_root}}/.gradle-home"
+
+[tasks.sdk]
+description = "Download Android SDK packages into tools/android-sdk"
+run = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-sdk.ps1"
+
+[tasks.build]
+description = "Build dist/glass-home-debug.apk"
+run = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1"
+
+[tasks.install]
+description = "Install the launcher on the TV (address from tv.env)"
+run = "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/install.ps1"
