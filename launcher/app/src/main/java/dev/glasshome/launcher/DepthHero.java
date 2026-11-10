@@ -178,14 +178,15 @@ final class DepthHero extends HeroView {
 
     /**
      * Puts the clock beside the character at the clock's height, overlapping its outline by
-     * about a fifth of the clock's width: the character covers one edge of the time, never the
-     * middle of it.
+     * about an eighth of the clock's width: the character covers one edge of the time, never
+     * the middle of it.
      */
     private void placeClock(FeaturedItem item, Bitmap cutout, boolean animate) {
         int unspecified = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         clockGroup.measure(unspecified, unspecified);
         int w = clockGroup.getMeasuredWidth();
         float target = dp(70);
+        boolean rightOfCharacter = false;
         if (cutout != null && item.hasFullCharacter()) {
             RectF r = item.fullCharRect;
             float charLeft = r.left * width, charTop = r.top * height;
@@ -204,16 +205,20 @@ final class DepthHero extends HeroView {
                 }
             }
             if (maxX >= 0f) {
-                float overlap = w * 0.22f;
+                float overlap = w * 0.12f;
                 float spaceLeft = minX - dp(70);
                 float spaceRight = width - dp(70) - maxX;
-                target = spaceRight >= spaceLeft ? maxX - overlap : minX - w + overlap;
+                rightOfCharacter = spaceRight >= spaceLeft;
+                target = rightOfCharacter ? maxX - overlap : minX - w + overlap;
             } else {
                 target = r.centerX() * width - w / 2f;
             }
         }
         int left = Math.round(Math.max(dp(70), Math.min(width - dp(70) - w, target)));
+        // The greeting goes on the side away from the character so that it is never covered.
+        int gravity = rightOfCharacter ? android.view.Gravity.END : android.view.Gravity.START;
         Runnable apply = () -> {
+            greeting.setGravity(gravity);
             LayoutParams lp = (LayoutParams) clockGroup.getLayoutParams();
             lp.leftMargin = left;
             clockGroup.setLayoutParams(lp);
