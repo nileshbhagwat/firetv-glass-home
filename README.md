@@ -232,7 +232,7 @@ settings as they were before any change.
 **The scripts cannot reach the TV.** Check that the TV is on and that ADB Debugging is
 enabled; Fire OS turns it off after every restart.
 
-**The connection drops for a few seconds at a time.** On this network the router
+**The connection drops for a few seconds at a time.** On some home networks the router
 occasionally stops passing traffic between Wi-Fi devices. The scripts reconnect
 automatically. Restarting the TV or the router clears it; for a permanent fix, run this once
 in an administrator command prompt (replace the address and MAC with your TV's):
