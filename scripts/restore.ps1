@@ -92,7 +92,15 @@ $a11y = (Invoke-Adb shell settings get secure enabled_accessibility_services) -j
 if ($a11y -match [regex]::Escape($GlassPkg) -and $PSCmdlet.ShouldProcess('Glass Home accessibility helper', 'turn off')) {
   $rest = ($a11y -split ':' | Where-Object { $_ -and $_ -notmatch [regex]::Escape($GlassPkg) -and $_ -ne 'null' }) -join ':'
   if ($rest) { Invoke-Adb shell settings put secure enabled_accessibility_services $rest | Out-Null }
-  else { Invoke-Adb shell settings delete secure enabled_accessibility_services | Out-Null }
+  else {
+    Invoke-Adb shell settings delete secure enabled_accessibility_services | Out-Null
+    # No other services remain: put accessibility_enabled back to its value at backup time.
+    $orig = Select-String -Path (Join-Path $BackupDir 'settings-secure.txt') -Pattern '^accessibility_enabled=(\d)' |
+      Select-Object -First 1 | ForEach-Object { $_.Matches[0].Groups[1].Value }
+    if (-not $orig) { $orig = '0' }
+    Invoke-Adb shell settings put secure accessibility_enabled $orig | Out-Null
+  }
+  Write-Host "  Home button helper turned off"
 }
 
 if ($PSCmdlet.ShouldProcess('com.amazon.tv.launcher', 'enable + set as home')) {
