@@ -53,6 +53,7 @@ final class SpotlightHero extends HeroView {
         halo = new View(c);
         scene.addBehindCharacter(halo, new FrameLayout.LayoutParams(1, 1));
 
+        Shading.addFloor(this, width, height);
         curtain = new View(c);
         curtain.setBackgroundColor(Color.BLACK);
         curtain.setAlpha(0f);
@@ -111,14 +112,15 @@ final class SpotlightHero extends HeroView {
     @Override
     protected void onStep(int delta) {
         final int transition = ++transitions;
-        block.set(current(), true);
+        FeaturedItem item = current();
         curtain.animate().cancel();
         curtain.animate().alpha(1f).setDuration(380).setInterpolator(new AccelerateInterpolator())
                 .withEndAction(() -> {
                     if (transition != transitions) return;
-                    scene.show(this, current(), () -> {
+                    scene.show(this, item, () -> {
                         if (transition != transitions) return;
-                        light(current());
+                        block.set(item, true); // the name changes with the lights coming up
+                        light(item);
                         scene.character.setTranslationY(dp(14));
                         scene.character.animate().translationY(0f).setDuration(1000)
                                 .setInterpolator(new DecelerateInterpolator(2f)).start();

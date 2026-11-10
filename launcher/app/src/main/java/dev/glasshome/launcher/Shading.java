@@ -45,6 +45,22 @@ final class Shading {
         return out;
     }
 
+    /**
+     * Fades the bottom of the scene, characters included, into the black behind the dock. Only
+     * a strip at the bottom, so it costs little to paint.
+     */
+    static void addFloor(HeroView hero, int width, int height) {
+        android.content.Context c = hero.getContext();
+        android.view.View fade = new android.view.View(c);
+        fade.setBackground(new android.graphics.drawable.GradientDrawable(
+                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{0x00000000, 0xFF000000}));
+        hero.addView(fade, HeroView.at(0, hero.dp(390), width, hero.dp(60)));
+        android.view.View floor = new android.view.View(c);
+        floor.setBackgroundColor(0xFF000000);
+        hero.addView(floor, HeroView.at(0, hero.dp(450), width, height - hero.dp(450)));
+    }
+
     private static void vertical(Canvas canvas, int width, float top, float bottom, int[] colors, float[] stops) {
         Paint paint = new Paint(Paint.DITHER_FLAG);
         paint.setShader(new LinearGradient(0, top, 0, bottom, colors, stops, Shader.TileMode.CLAMP));

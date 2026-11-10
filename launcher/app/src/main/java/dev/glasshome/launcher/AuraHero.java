@@ -78,6 +78,7 @@ final class AuraHero extends HeroView {
             motes.add(mote);
         }
 
+        Shading.addFloor(this, width, height);
         block = new TitleBlock(c, 34, Gravity.START, dp(560));
         addView(block, at(dp(70), dp(262), LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         block.set(current(), false);
@@ -148,12 +149,13 @@ final class AuraHero extends HeroView {
         front = 1 - front;
         final int next = front;
         SceneLayer in = layers[next];
-        block.set(current(), true);
+        FeaturedItem item = current();
         in.reset();
         in.setAlpha(0f);
-        dress(next, current());
-        in.show(this, current(), () -> {
+        dress(next, item);
+        in.show(this, item, () -> {
             if (transition != transitions) return;
+            block.set(item, true); // the name changes with the picture
             in.bringToFront();
             in.animate().alpha(1f).setDuration(1100).setInterpolator(new AccelerateDecelerateInterpolator()).start();
             in.character.setAlpha(0f);

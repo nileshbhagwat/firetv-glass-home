@@ -57,6 +57,7 @@ final class CinemaHero extends HeroView {
         first.setScaleX(REST_SCALE);
         first.setScaleY(REST_SCALE);
 
+        Shading.addFloor(this, width, height);
         block = new TitleBlock(c, 34, Gravity.START, dp(560));
         addView(block, at(dp(70), dp(262), LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         block.set(current(), false);
@@ -69,11 +70,13 @@ final class CinemaHero extends HeroView {
         SceneLayer out = layers[front];
         front = 1 - front;
         SceneLayer in = layers[front];
-        block.set(current(), true);
+        FeaturedItem item = current();
         in.reset();
         in.setAlpha(0f);
-        in.show(this, current(), () -> {
-            if (transition == transitions) dollyThrough(out, in, delta);
+        in.show(this, item, () -> {
+            if (transition != transitions) return;
+            block.set(item, true); // the name changes with the picture
+            dollyThrough(out, in, delta);
         });
     }
 
