@@ -58,12 +58,18 @@ function Get-NeighbourTable {
 }
 
 function Test-TvHost([string]$Ip) {
-  try {
-    if ((New-Object Net.NetworkInformation.Ping).Send($Ip, 1000).Status -eq 'Success') { return $true }
-  } catch { }
-  # Some networks block ping; the ADB port answers whenever ADB debugging is on.
-  $client = New-Object Net.Sockets.TcpClient
-  try { return ($client.ConnectAsync($Ip, 5555).Wait(1000) -and $client.Connected) } catch { return $false } finally { $client.Close() }
+  # The TV's Wi-Fi dozes between packets, so the first reply can take over a second: try twice.
+  for ($attempt = 0; $attempt -lt 2; $attempt++) {
+    try {
+      if ((New-Object Net.NetworkInformation.Ping).Send($Ip, 1500).Status -eq 'Success') { return $true }
+    } catch { }
+    # Some networks block ping; the ADB port answers whenever ADB debugging is on.
+    $client = New-Object Net.Sockets.TcpClient
+    try {
+      if ($client.ConnectAsync($Ip, 5555).Wait(2500) -and $client.Connected) { return $true }
+    } catch { } finally { $client.Close() }
+  }
+  return $false
 }
 
 function ConvertTo-IpNumber([string]$Ip) {
@@ -97,8 +103,12 @@ function Get-HomeAddresses([string]$LastIp) {
 # then looks the TV up by its MAC address. Returns its IP address or $null.
 function Find-TvByMac([string]$Mac, [string]$LastIp) {
   $mac = ConvertTo-MacKey $Mac
-  $pings = foreach ($ip in (Get-HomeAddresses $LastIp)) { (New-Object Net.NetworkInformation.Ping).SendPingAsync($ip, 800) }
-  try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($pings), 5000) } catch { }
+  $addresses = @(Get-HomeAddresses $LastIp)
+  # Two rounds: the first wakes devices whose Wi-Fi is dozing, the second gets their replies.
+  for ($round = 0; $round -lt 2; $round++) {
+    $pings = foreach ($ip in $addresses) { (New-Object Net.NetworkInformation.Ping).SendPingAsync($ip, 1500) }
+    try { [void][Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($pings), 6000) } catch { }
+  }
   $hits = (Get-NeighbourTable).GetEnumerator() | Where-Object { $_.Value.Mac -eq $mac }
   # A permanent (static) entry may still point at an old address: prefer what was just seen.
   $hit = @($hits | Where-Object { $_.Value.Dynamic }) + @($hits | Where-Object { -not $_.Value.Dynamic }) | Select-Object -First 1
