@@ -50,7 +50,8 @@ file that is downloaded.
       you are a developer.
    2. Settings > My Fire TV > Developer Options: turn **ADB Debugging** on.
    3. Note the IP address under Settings > My Fire TV > About > Network.
-2. **Set the TV address**: copy `tv.env.example` to `tv.env` and set `TV_IP`.
+2. **Set the TV address**: copy `tv.env.example` to `tv.env` and set `TV_IP`. If the router
+   gives the TV a new address later, the scripts find it again by themselves.
 3. **Run `glasshome.bat`** (double-click). The first run builds the toolchain image
    (about 1 GB, once). When the TV asks *Allow USB debugging?*, tick
    *Always allow from this computer* and select OK.
@@ -270,6 +271,7 @@ settings as they were before any change.
 | `scripts/push-featured.ps1` | Copy prepared titles to the TV, or remove them |
 | `scripts/set-style.ps1` | Choose the home style from the PC |
 | `scripts/install.ps1` | Install a built APK using the host's adb |
+| `scripts/find-tv.ps1` | Show the TV's address, finding the TV again if it has changed |
 | `scripts/set-dock.ps1` | List apps, set or reset the dock |
 | `scripts/set-wallpaper.ps1` | Set or remove the wallpaper |
 | `scripts/debloat.ps1` | Apply `config/debloat-packages.txt` |
@@ -283,6 +285,14 @@ settings as they were before any change.
 **The scripts cannot reach the TV.** Check that the TV is on and that ADB Debugging is
 enabled; Fire OS turns it off after every restart.
 
+**The TV has a new IP address.** Nothing on the TV depends on its address; only the scripts
+on the PC use `TV_IP` in `tv.env`. The first time a script reaches the TV it saves the TV's
+network card ID (MAC address) as `TV_MAC` in `tv.env`. If the router later gives the TV a
+different address, every script notices that the TV no longer answers, finds it on the home
+network by that ID, and updates `TV_IP` by itself. `scripts\find-tv.ps1` does only this step
+and prints the address. To keep the address fixed, reserve it for the TV in the router's
+DHCP settings.
+
 **The connection drops for a few seconds at a time.** On some home networks the router
 occasionally stops passing traffic between Wi-Fi devices. The scripts reconnect
 automatically. Restarting the TV or the router clears it; for a permanent fix, run this once
@@ -292,7 +302,8 @@ in an administrator command prompt (replace the address and MAC with your TV's):
 netsh interface ipv4 add neighbors "Wi-Fi" 192.168.1.50 aa-bb-cc-dd-ee-ff
 ```
 
-Undo with `netsh interface ipv4 delete neighbors "Wi-Fi" 192.168.1.50`.
+Undo with `netsh interface ipv4 delete neighbors "Wi-Fi" 192.168.1.50`. If the TV's address
+changes later, delete the entry and add it again with the new address.
 
 **Home opens Amazon's home screen.** The Home button helper is off. Run `glasshome.bat` or
 `scripts\install.ps1` again to re-enable it.

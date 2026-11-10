@@ -27,12 +27,8 @@ param(
 $root = Split-Path -Parent $PSScriptRoot
 $adb = Join-Path $root 'tools\platform-tools\adb.exe'
 if (-not (Test-Path $adb)) { $adb = 'adb' }
-if (-not $Device) {
-  $envFile = Join-Path $root 'tv.env'
-  if (-not (Test-Path $envFile)) { throw "Create tv.env from tv.env.example or pass -Device" }
-  $ip = (Select-String -Path $envFile -Pattern '^TV_IP=(.+)$' | Select-Object -First 1).Matches[0].Groups[1].Value.Trim()
-  $Device = "${ip}:5555"
-}
+. "$PSScriptRoot\tv-common.ps1"
+$Device = Get-TvDevice $Device  # finds the TV again if its address has changed
 
 $AmazonHome = 'com.amazon.tv.launcher/.ui.HomeActivity_vNext'
 $GlassPkg   = 'dev.glasshome.launcher'

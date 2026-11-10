@@ -1,11 +1,13 @@
 @echo off
 setlocal
 rem One-click build and install of Glass Home using Docker Desktop.
-rem The TV address is read from tv.env (TV_IP=...).
+rem The TV address is read from tv.env (TV_IP=...) and found again if it has changed.
 cd /d "%~dp0"
 set "IMAGE=glasshome-builder:2"
 
 if not exist tv.env copy tv.env.example tv.env >nul
+rem If the TV has a new address, find it on the home network again (this updates tv.env).
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\find-tv.ps1 >nul
 set "TV_IP="
 for /f "tokens=1,* delims==" %%a in ('findstr /b "TV_IP=" tv.env') do set "TV_IP=%%b"
 if "%TV_IP%"=="" (
