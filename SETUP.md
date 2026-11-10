@@ -23,7 +23,7 @@ Both options produce `dist/glass-home-debug.apk`.
 Double-click `glasshome.bat`. It:
 
 1. Starts Docker Desktop if it is not running.
-2. Builds the toolchain image `glasshome-builder:1` from `docker/Dockerfile` on the first run.
+2. Builds the toolchain image `glasshome-builder:2` from `docker/Dockerfile` on the first run.
 3. Builds the APK in a container (`docker/build.sh`), caching Gradle downloads in the Docker
    volume `glasshome-gradle`.
 4. Installs the APK on the TV from a container (`docker/install.sh`), reusing the host's ADB
@@ -32,9 +32,9 @@ Double-click `glasshome.bat`. It:
 The equivalent commands, run from the project folder:
 
 ```bat
-docker build -t glasshome-builder:1 docker
-docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle glasshome-builder:1 sh /work/docker/build.sh
-docker run --rm -v "%CD%:/work" -v "%USERPROFILE%\.android:/root/.android" glasshome-builder:1 sh /work/docker/install.sh 192.168.1.50
+docker build -t glasshome-builder:2 docker
+docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle glasshome-builder:2 sh /work/docker/build.sh
+docker run --rm -v "%CD%:/work" -v "%USERPROFILE%\.android:/root/.android" glasshome-builder:2 sh /work/docker/install.sh 192.168.1.50
 ```
 
 ## Option B: mise, step by step
@@ -72,7 +72,7 @@ Every file downloaded for this project, with its source and checksum.
 | Outfit variable font (`Outfit.ttf`) | `https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf` | 110,884 bytes | SHA-256 `fc7287273e66929776e2ba54f144fe699080bec29f61bf649d70d871468aeade` |
 | Outfit licence (`OFL.txt`) | `https://github.com/google/fonts/raw/main/ofl/outfit/OFL.txt` | 4,389 bytes | SHA-256 `c676351bf8576b9aba743cd5eaa8c0e7ee0d51f805d720447b4df4ddb6a2e416` |
 
-### Docker image `glasshome-builder:1`
+### Docker image `glasshome-builder:2`
 
 Image ID `sha256:ae9cebeb596410bf038af158b959720e1a8aaf19eb187ad937ae830aea76afbe`,
 2.16 GB in Docker Desktop's image store.
@@ -82,9 +82,9 @@ Image ID `sha256:ae9cebeb596410bf038af158b959720e1a8aaf19eb187ad937ae830aea76afb
 | Base image `eclipse-temurin:17-jdk-jammy` (OpenJDK 17.0.21, Ubuntu 22.04) | Docker Hub | n/a | Digest `sha256:057a0daec60e87c96571bf5c9c7792065bcb19e804d584cd37d4144038a35717` |
 | `unzip` 6.0-26ubuntu3.2, `ca-certificates` 20260816ubuntu0.22.04.2 | `archive.ubuntu.com` (apt) | small | Verified by apt (`curl` 7.81.0 was already in the base image) |
 | Android command-line tools `commandlinetools-linux-16111833_latest.zip` | `https://dl.google.com/android/repository/` | 172.7 MB | SHA-1 `e025545c62a8e64c7559119566a569fb1dec5f60` (checked in the Dockerfile) |
-| SDK platform `platforms;android-34` (`platform-34-ext12_r01.zip`) | Google, via sdkmanager | 60.6 MB | SHA-1 `ba80ccbcc29b29f25ac926a08c0b2777f0bce842` (checked by sdkmanager) |
-| SDK build tools `build-tools;34.0.0` (`build-tools_r34-linux.zip`) | Google, via sdkmanager | 58.4 MB | SHA-1 `d6d58e0c6925a9e4d9a541e84cd1f405c2f9d2a9` (checked by sdkmanager) |
-| SDK platform-tools 37.0.1 for Linux | Google, via sdkmanager | 8.6 MB | SHA-1 `477254aa5f903c15cf51001717bdf347fb6b53e0` (checked by sdkmanager) |
+| SDK platform `platforms/android-34` (`platform-34-ext12_r01.zip`) | Google, via the Android CLI | 60.6 MB | SHA-1 `ba80ccbcc29b29f25ac926a08c0b2777f0bce842` (checked by the CLI) |
+| SDK build tools `build-tools/34.0.0` (`build-tools_r34-linux.zip`) | Google, via the Android CLI | 58.4 MB | SHA-1 `d6d58e0c6925a9e4d9a541e84cd1f405c2f9d2a9` (checked by the CLI) |
+| SDK platform-tools 37.0.1 for Linux | Google, via the Android CLI | 8.6 MB | SHA-1 `477254aa5f903c15cf51001717bdf347fb6b53e0` (checked by the CLI) |
 | Gradle 8.10.2 (`gradle-8.10.2-bin.zip`) | `https://services.gradle.org/distributions/` | 130.4 MB | SHA-256 `31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26` (checked in the Dockerfile) |
 
 ### Docker volume `glasshome-gradle` (Gradle cache, 365 MB)
@@ -107,7 +107,7 @@ Downloaded by Gradle from Google Maven (`maven.google.com`) and Maven Central:
 To list the resolved versions again:
 
 ```bat
-docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launcher glasshome-builder:1 gradle -q :app:dependencies --configuration debugRuntimeClasspath
+docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launcher glasshome-builder:2 gradle -q :app:dependencies --configuration debugRuntimeClasspath
 ```
 
 ### mise build (Option B)
@@ -123,21 +123,20 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launc
 
 ## Licences accepted
 
-- **Android SDK License Agreement**: accepted through `sdkmanager --licenses` while building the
-  Docker image, with the project owner's approval, on 10 November 2026. Option B accepts the
-  same licence when `mise run sdk` runs `scripts/setup-sdk.ps1`.
+- **Android SDK License Agreement**: accepted with the project owner's approval on
+  10 November 2026, when the Docker image was first built. Installing SDK packages through the
+  Docker image or `mise run sdk` relies on that acceptance.
 
 ## Usage metrics
 
 - **Android CLI.** Since command-line tools 16111833 the SDK tools are the Android CLI
   (`android`, version 1.1.16717390), which collects usage metrics by default. `sdkmanager` is
-  now a deprecated wrapper around it and cannot turn this off, so `scripts\setup-sdk.ps1`
-  calls `android --no-metrics` for every command.
-- **Before the switch.** The Docker image build and the first `mise run sdk` used
-  `sdkmanager` with metrics on; one upload from the laptop took place on 10 November 2026.
-  The three reports still queued in `%USERPROFILE%\.android\cli\analytics\metrics\spool`
-  were deleted the same day. The Dockerfile still calls `sdkmanager`; this only matters when
-  the image is rebuilt.
+  now a deprecated wrapper around it and cannot turn this off, so `scripts\setup-sdk.ps1` and
+  `docker/Dockerfile` call `android --no-metrics` for every command.
+- **Before the switch.** The first Docker image (`glasshome-builder:1`) and the first
+  `mise run sdk` used `sdkmanager` with metrics on; one upload from the laptop took place on
+  10 November 2026. The three reports still queued in
+  `%USERPROFILE%\.android\cli\analytics\metrics\spool` were deleted the same day.
 - **Android Studio and Gradle plugin analytics** are off:
   `%USERPROFILE%\.android\analytics.settings` contains `"hasOptedIn": false`.
 
@@ -148,13 +147,13 @@ docker run --rm -v "%CD%:/work" -v glasshome-gradle:/cache/gradle -w /work/launc
 | `%USERPROFILE%\.android\adbkey`, `adbkey.pub` | adb | Key that the TV authorised with *Always allow from this computer* |
 | `%USERPROFILE%\.android\bin\android-cli.exe`, `%USERPROFILE%\.android\cli\`, `%USERPROFILE%\.android\cache\` | Android CLI | CLI binary, its state and repository cache |
 | `%LOCALAPPDATA%\mise\installs\java`, `...\gradle` | mise | Java 17 and Gradle 8.10.2 for Option B |
-| Docker image `glasshome-builder:1` | `glasshome.bat` | Build toolchain |
+| Docker image `glasshome-builder:2` | `glasshome.bat` | Build toolchain |
 | Docker volume `glasshome-gradle` | `glasshome.bat` | Gradle download cache |
 
 ## Removing the toolchain
 
 ```bat
-docker rmi glasshome-builder:1
+docker rmi glasshome-builder:2
 docker volume rm glasshome-gradle
 rmdir /s /q tools dist .gradle-home launcher\.gradle launcher\app\build launcher\build
 mise uninstall java@temurin-17.0.21+9 gradle@8.10.2
