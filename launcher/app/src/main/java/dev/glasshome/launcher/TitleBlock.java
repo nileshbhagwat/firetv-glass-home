@@ -70,9 +70,10 @@ final class TitleBlock extends LinearLayout {
                     ? c.getString(R.string.featured_hint_generic)
                     : c.getString(R.string.featured_hint, shown.provider));
         } else {
+            int text = shown.isSeries() ? R.string.featured_caption_series : R.string.featured_caption_film;
             caption.setText(shown.provider == null
-                    ? c.getString(R.string.featured_trending)
-                    : c.getString(R.string.featured_caption, shown.provider));
+                    ? c.getString(R.string.featured_popular)
+                    : c.getString(text, shown.provider));
         }
     }
 
