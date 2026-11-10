@@ -96,6 +96,14 @@ abstract class HeroView extends FrameLayout {
         return false;
     }
 
+    /**
+     * True when the style's artwork covers the whole screen. The home screen then stops
+     * painting the soft background glow behind it, which nobody would see.
+     */
+    boolean coversScreen() {
+        return false;
+    }
+
     /** Greeting text for styles that draw their own clock. */
     void setGreeting(CharSequence text) {
     }

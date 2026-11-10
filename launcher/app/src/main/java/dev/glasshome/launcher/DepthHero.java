@@ -50,6 +50,11 @@ final class DepthHero extends HeroView {
     }
 
     @Override
+    boolean coversScreen() {
+        return true;
+    }
+
+    @Override
     void setGreeting(CharSequence text) {
         greetingText = text;
         if (greeting != null) greeting.setText(text);

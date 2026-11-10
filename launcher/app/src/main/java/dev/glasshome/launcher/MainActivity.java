@@ -621,6 +621,8 @@ public final class MainActivity extends Activity {
     /** Updates the rest of the home screen after the featured titles changed. */
     private void heroChanged() {
         boolean heroOn = heroActive();
+        // Behind full-screen artwork the glow cannot be seen; not painting it keeps motion smooth.
+        glow.setVisibility(heroOn && hero.coversScreen() ? View.INVISIBLE : View.VISIBLE);
         int clock = heroOn && hero.replacesClock() ? View.INVISIBLE : View.VISIBLE;
         if (clockGroup.getVisibility() != clock) {
             clockGroup.setVisibility(clock);
