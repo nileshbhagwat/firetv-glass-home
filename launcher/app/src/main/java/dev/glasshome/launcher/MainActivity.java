@@ -21,6 +21,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
+import android.widget.LinearLayout;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -68,6 +70,11 @@ public final class MainActivity extends Activity {
     private RecyclerView grid;
     private TileAdapter adapter;
     private ImageView wallpaper;
+    private TextView shelfCaption;
+    private LinearLayout shelf;
+    private String shelfPackage;
+    private List<Recommendations.Item> shelfItems = new ArrayList<>();
+    private final Recommendations.Listener shelfListener = () -> updateShelf(true);
     private View scrim;
     private InputsMenu inputsMenu;
     private NetworkStatus networkStatus;
@@ -117,6 +124,9 @@ public final class MainActivity extends Activity {
         grid = findViewById(R.id.grid);
         wallpaper = findViewById(R.id.wallpaper);
         scrim = findViewById(R.id.scrim);
+        shelfCaption = findViewById(R.id.shelf_caption);
+        shelf = findViewById(R.id.shelf);
+        Recommendations.addListener(shelfListener);
         pills = new TextView[]{findViewById(R.id.pill_inputs), findViewById(R.id.pill_wifi), findViewById(R.id.pill_settings)};
         appsOffset = getResources().getDimensionPixelSize(R.dimen.apps_offset);
         rowHeight = getResources().getDimensionPixelSize(R.dimen.tile_slot_height);
@@ -206,6 +216,7 @@ public final class MainActivity extends Activity {
             unregisterReceiver(packageReceiver);
         }
         networkStatus.stop();
+        Recommendations.removeListener(shelfListener);
         loader.shutdownNow();
         super.onDestroy();
     }
@@ -319,6 +330,7 @@ public final class MainActivity extends Activity {
             title.setText("");
         }
         title.animate().alpha(zone == ZONE_DOCK ? 1f : 0.45f).setDuration(220).start();
+        updateShelf(animate);
         if (zone == ZONE_GRID) {
             scrollGridToSelection(animate);
         }
@@ -569,6 +581,86 @@ public final class MainActivity extends Activity {
         return BitmapFactory.decodeFile(file.getPath(), options);
     }
 
+    /**
+     * The owner's first name: an override set over ADB, otherwise taken from the TV's name
+     * ("SAM's Fire TV" gives "Sam"). Returns null when the TV name has no owner.
+     */
+    private String ownerName() {
+        String override = Prefs.ownerName(this);
+        if (override != null) return override;
+        String device = Settings.Global.getString(getContentResolver(), Settings.Global.DEVICE_NAME);
+        if (device == null) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^\\s*(\\S+)['\u2019]s\\b").matcher(device);
+        if (!m.find()) return null;
+        String raw = m.group(1);
+        return raw.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + raw.substring(1).toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /**
+     * Content shelf: when the focused dock app shares recommendations (Netflix does on Fire OS),
+     * up to four artwork cards replace the large app name, fanned slightly in 3D.
+     */
+    private void updateShelf(boolean animate) {
+        AppEntry app = (zone != ZONE_GRID && !dockApps.isEmpty()) ? dockApps.get(dockIndex) : null;
+        List<Recommendations.Item> items = app == null ? new ArrayList<>() : Recommendations.forPackage(app.packageName);
+        if (items.isEmpty()) {
+            shelf.setVisibility(View.GONE);
+            shelfCaption.setVisibility(View.GONE);
+            title.setVisibility(View.VISIBLE);
+            shelfPackage = null;
+            shelfItems = items;
+            return;
+        }
+        title.setVisibility(View.GONE);
+        shelfCaption.setText(getString(R.string.shelf_caption, app.label));
+        shelfCaption.setTypeface(Fonts.outfit(this, 400));
+        shelfCaption.setVisibility(View.VISIBLE);
+        shelf.setVisibility(View.VISIBLE);
+        boolean changed = !app.packageName.equals(shelfPackage) || !sameItems(items, shelfItems);
+        shelfPackage = app.packageName;
+        shelfItems = items;
+        shelf.setAlpha(zone == ZONE_DOCK ? 1f : 0.45f);
+        if (!changed) return;
+
+        shelf.removeAllViews();
+        float density = getResources().getDisplayMetrics().density;
+        int width = getResources().getDimensionPixelSize(R.dimen.shelf_card_width);
+        int height = getResources().getDimensionPixelSize(R.dimen.shelf_card_height);
+        float middle = (items.size() - 1) / 2f;
+        for (int i = 0; i < items.size(); i++) {
+            ImageView card = new ImageView(this);
+            card.setImageBitmap(items.get(i).image);
+            card.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            card.setBackgroundResource(R.drawable.tile_bg);
+            card.setClipToOutline(true);
+            card.setContentDescription(items.get(i).title);
+            card.setCameraDistance(8000 * density);
+            card.setRotationY((i - middle) * -6f); // fanned towards the centre
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(width, height);
+            lp.setMarginEnd(Math.round(16 * density));
+            shelf.addView(card, lp);
+            if (animate) {
+                // Pop out of the screen: each card tips up and springs forward in turn.
+                card.setAlpha(0f);
+                card.setScaleX(0.86f);
+                card.setScaleY(0.86f);
+                card.setRotationX(24f);
+                card.setTranslationY(18 * density);
+                card.animate().alpha(1f).scaleX(1f).scaleY(1f).rotationX(0f).translationY(0f)
+                        .setStartDelay(i * 70L).setDuration(460)
+                        .setInterpolator(new OvershootInterpolator(1.3f)).start();
+            }
+        }
+    }
+
+    private static boolean sameItems(List<Recommendations.Item> a, List<Recommendations.Item> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            if (!a.get(i).key.equals(b.get(i).key)) return false;
+        }
+        return true;
+    }
+
     private void updateGreeting() {
         int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
         int text;
@@ -581,7 +673,8 @@ public final class MainActivity extends Activity {
         } else {
             text = R.string.greeting_night;
         }
-        greeting.setText(text);
+        String name = ownerName();
+        greeting.setText(name == null ? getString(text) : getString(R.string.greeting_with_name, getString(text), name));
     }
 
     private void applyTypefaces() {

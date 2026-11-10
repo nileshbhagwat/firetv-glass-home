@@ -9,6 +9,9 @@
     <string name="apps">Apps</string>
     <string name="live_tv">Live TV</string>
     <string name="input_av">AV</string>
+    <string name="greeting_with_name">%1$s, %2$s</string>
+    <string name="shelf_caption">New on %1$s</string>
+    <string name="recommendations_label">Glass Home: content shelf</string>
     <string name="input_connecting">Opening %1$s</string>
     <string name="input_no_signal">No signal on %1$s</string>
     <string name="input_unavailable">%1$s cannot be opened</string>

@@ -103,6 +103,10 @@ if ($a11y -match [regex]::Escape($GlassPkg) -and $PSCmdlet.ShouldProcess('Glass 
   Write-Host "  Home button helper turned off"
 }
 
+if ($PSCmdlet.ShouldProcess('Glass Home content shelf', 'remove notification access')) {
+  Invoke-Adb shell cmd notification disallow_listener "$GlassPkg/$GlassPkg.RecommendationListener" | Out-Null
+}
+
 if ($PSCmdlet.ShouldProcess('com.amazon.tv.launcher', 'enable + set as home')) {
   Invoke-Adb shell pm enable --user 0 com.amazon.tv.launcher | Out-Host
   Invoke-Adb shell cmd package set-home-activity $AmazonHome | Out-Host

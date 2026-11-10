@@ -123,6 +123,27 @@
             android:textColor="@color/text_primary"
             android:textSize="46sp" />
 
+        <TextView
+            android:id="@+id/shelf_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="194dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="16sp"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/shelf"
+            android:layout_width="wrap_content"
+            android:layout_height="112dp"
+            android:layout_marginStart="70dp"
+            android:layout_marginTop="220dp"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="horizontal"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/dock_row"
             android:layout_width="@dimen/dock_row_width"

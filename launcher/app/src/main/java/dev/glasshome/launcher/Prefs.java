@@ -23,6 +23,7 @@ final class Prefs {
     private static final String KEY_TOP = "focus_top";
     private static final String KEY_DOCK_INDEX = "focus_dock";
     private static final String KEY_GRID = "focus_grid";
+    private static final String KEY_OWNER = "owner_name";
 
     private Prefs() {
     }
@@ -61,6 +62,22 @@ final class Prefs {
     static int[] focus(Context context) {
         SharedPreferences p = prefs(context);
         return new int[]{p.getInt(KEY_ZONE, 1), p.getInt(KEY_TOP, 0), p.getInt(KEY_DOCK_INDEX, 0), p.getInt(KEY_GRID, 0)};
+    }
+
+    /** Name shown in the greeting; null means "use the TV's name". */
+    static String ownerName(Context context) {
+        String name = prefs(context).getString(KEY_OWNER, null);
+        return name == null || name.trim().isEmpty() ? null : name.trim();
+    }
+
+    static void setOwnerName(Context context, String name) {
+        SharedPreferences.Editor editor = prefs(context).edit();
+        if (name == null || name.trim().isEmpty()) {
+            editor.remove(KEY_OWNER);
+        } else {
+            editor.putString(KEY_OWNER, name.trim());
+        }
+        editor.commit();
     }
 
     static void saveFocus(Context context, int zone, int top, int dock, int grid) {
